@@ -1,37 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
+ <class>mainWedgit</class>
+ <widget class="QWidget" name="mainWedgit">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>991</width>
-    <height>799</height>
+    <width>858</width>
+    <height>454</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>键鼠自动化设计</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout_2">
    <item>
-    <widget class="QListWidget" name="listWidget"/>
+    <widget class="QListView" name="listView_2"/>
    </item>
    <item>
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
-        <widget class="QPushButton" name="pushButton">
+        <widget class="QPushButton" name="addActionButton">
          <property name="text">
-          <string>PushButton</string>
+          <string>add</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton_2">
+        <widget class="QPushButton" name="removeActionButton">
          <property name="text">
-          <string>PushButton</string>
+          <string>remove</string>
          </property>
         </widget>
        </item>
