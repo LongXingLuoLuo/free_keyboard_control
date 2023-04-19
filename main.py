@@ -71,19 +71,5 @@ class MyWidget(QWidget):
         self.label.setText("(12, 28)")
 
 
-widgetPosition = QWidget()
-ui_transparentWidget = Ui_transparentWidget()
-ui_transparentWidget.setupUi(widgetPosition)
-
-
-def showMousePosition():
-    mousePosition = pyautogui.position()
-    global widgetPosition
-    widgetPosition.move(mousePosition.x, mousePosition.y)
-    widgetPosition.show()
-
-
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    showMousePosition()
-    app.exec()
+    screenShootByKey()
