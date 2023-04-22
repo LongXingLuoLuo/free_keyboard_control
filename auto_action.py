@@ -376,7 +376,7 @@ class ActionGroup(object):
     def deleteFile(self):
         os.remove(self.getPath())
         self.clear()
-        logger.debug(f"ActionGroup[{self.name}] : delete {self.getPath()}")
+        logger.info(f"ActionGroup[{self.name}] : delete {self.getPath()}")
 
     # def read(self, path):
     #     jsonData = json.loads(open(path, encoding='UTF-8'))
@@ -419,12 +419,6 @@ def readAllJsons() -> dict[str, ActionGroup]:
             actionGroupDict[name] = actionGroup
     return actionGroupDict
 
-
-def delActionGroup(name: str):
-    path = datasDir + '\\' + name + '.json'
-    if os.path.isfile(path):
-        os.remove(path)
-        logger.info(f'del {name}.')
 
 
 if __name__ == '__main__':
