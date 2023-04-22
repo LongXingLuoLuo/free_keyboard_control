@@ -3,3 +3,4 @@
 /theme/
 /logs/
 /ui/*.py
+/*.log
