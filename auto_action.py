@@ -7,7 +7,7 @@ import pyautogui
 import pyperclip
 
 from utils import getAllFiles
-
+from log_config import logger
 # 动作组数据的保存文件夹
 datasDir = './datas'
 # ! pyautogui 函数执行间隔
@@ -268,12 +268,14 @@ def generateFunc(data: dict):
 class ActionGroup(object):
     """动作组"""
 
-    def __init__(self, dataList: None | list[dict[str, str | int]] = None):
+    def __init__(self, name: str, dataList: None | list[dict[str, str | int]] = None):
         super().__init__()
         if dataList is None:
             dataList = []
         self.dataList = dataList
+        self.name = name
         self.funcList = [generateFunc(data) for data in self.dataList]
+        self.TAG = f"ActionGroup[{self.name}]"
 
     def run(self):
         """
@@ -282,8 +284,10 @@ class ActionGroup(object):
         """
         for func in self.funcList:
             if not func():
+                logger.info(self.TAG + ": run end.")
                 return False
             time.sleep(ACTION_PAUSE)
+        logger.info(self.TAG + ": run end.")
         return True
 
     def append(self, __data: dict[str, str | int]):
@@ -294,6 +298,7 @@ class ActionGroup(object):
         """
         self.dataList.append(__data)
         self.funcList.append(generateFunc(__data))
+        logger.debug(self.TAG + f": append {__data}.")
 
     def insert(self, __index: int, __data: dict[str, str | int]):
         """
@@ -304,6 +309,7 @@ class ActionGroup(object):
         """
         self.dataList.insert(__index, __data)
         self.funcList.insert(__index, generateFunc(__data))
+        logger.debug(self.TAG + f": insert ({__index}) {__data}.")
 
     def pop(self, __index: int):
         """
@@ -313,6 +319,7 @@ class ActionGroup(object):
         """
         self.dataList.pop(__index)
         self.funcList.pop(__index)
+        logger.debug(self.TAG + f": pop {__index}.")
 
     def typeList(self) -> list[str]:
         return [actionName_en[data['actionType']] for data in self.dataList]
@@ -332,6 +339,11 @@ class ActionGroup(object):
     def __iter__(self):
         return self.dataList.__iter__()
 
+    def clear(self):
+        self.dataList = []
+        self.funcList = []
+        logger.debug(self.TAG + ": clear")
+
     def json(self) -> str:
         """
         返回json 类型
@@ -339,16 +351,31 @@ class ActionGroup(object):
         """
         return json.dumps(self.dataList)
 
-    def save(self, name):
+    def getPath(self) -> str:
         """
-        保存为 json 文件
-        :param name: 文件路径
-        :return:
+        返回所保存的文件路径
+        :return: 所保存的文件路径
         """
         if not os.path.isdir(datasDir):
             os.mkdir(datasDir)
-        with open(datasDir + '\\' + name + '.json', encoding='UTF-8', mode='w') as f:
+        path = os.path.abspath(datasDir + '\\' + self.name + '.json')
+        return path
+
+
+    def save(self):
+        """
+        保存为 json 文件
+        :return:
+        """
+
+        with open(self.getPath(), encoding='UTF-8', mode='w') as f:
             f.write(self.json())
+            logger.debug(f"ActionGroup[{self.name}] : saved in {self.getPath()}.")
+
+    def deleteFile(self):
+        os.remove(self.getPath())
+        self.clear()
+        logger.debug(f"ActionGroup[{self.name}] : delete {self.getPath()}")
 
     # def read(self, path):
     #     jsonData = json.loads(open(path, encoding='UTF-8'))
@@ -387,15 +414,16 @@ def readAllJsons() -> dict[str, ActionGroup]:
         name = str(os.path.basename(path))
         name = name[:-5]
         with open(path, 'r') as f:
-            actionGroup = ActionGroup(json.load(f))
+            actionGroup = ActionGroup(name=name, dataList=json.load(f))
             actionGroupDict[name] = actionGroup
     return actionGroupDict
 
 
-def delJson(name: str):
+def delActionGroup(name: str):
     path = datasDir + '\\' + name + '.json'
     if os.path.isfile(path):
         os.remove(path)
+        logger.debug(f'del {name}.')
 
 
 if __name__ == '__main__':

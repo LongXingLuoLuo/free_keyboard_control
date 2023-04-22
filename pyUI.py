@@ -3,11 +3,13 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 import auto_action
+from log_config import logger
 
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None, actionGroupDict: None | dict[str, auto_action.ActionGroup] = None):
         super(MainWindow, self).__init__(parent)
+        self.TAG = "MainWindow[]"
         # ui 变量
         self.centralWidget = QtWidgets.QWidget(self)
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.centralWidget)
@@ -90,9 +92,13 @@ class MainWindow(QtWidgets.QMainWindow):
             return None
 
     def on_actionGroupListView_click(self, index: QtCore.QModelIndex):
-        self.upgradeActeeionListView()
+        self.upgradeActionListView()
 
-    def upgradeActeeionListView(self):
+    def upgradeActionListView(self):
+        """
+        更新 actionListView 内容
+        :return:
+        """
         name = self.getSelectedActionGroupName()
         if name is None:
             self.actionListModel.setStringList([])
@@ -128,24 +134,24 @@ class MainWindow(QtWidgets.QMainWindow):
         :return:
         """
         name = 'three'
-        actonGroup = auto_action.ActionGroup()
-        actonGroup.append(auto_action.generateAction(actionType=auto_action.ACTION_END))
-
-        # 添加
-        row = self.actionGroupListModel.rowCount()
         if len(self.actionGroupListView.selectedIndexes()) > 0:
             row = self.actionGroupListView.selectedIndexes()[0].row() + 1
         i = 1
         while name + f"({i})" in self.actionGroupDict.keys():
             i += 1
         name = name + f"({i})"
+        actonGroup = auto_action.ActionGroup(name=name)
+        self.actionGroupDict[name] = actonGroup
+        # 数据部分
+        self.actionGroupDict[name].save()
+
+        # 添加
+        row = self.actionGroupListModel.rowCount()
         # ui 部分
         self.actionGroupListModel.insertRow(row)
         self.actionGroupListModel.setData(self.actionGroupListModel.index(row), name)
 
-        # 数据部分
-        self.actionGroupDict[name] = actonGroup
-        actonGroup.save(name)
+
 
     def delSelectedActionGroup(self):
         """
@@ -163,8 +169,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionListModel.setStringList([])
 
         # 数据部分
+        self.actionGroupDict[name].deleteFile()
         self.actionGroupDict.pop(name)
-        auto_action.delJson(name)
 
     def addNewAction(self, __index):
         name = self.getSelectedActionGroupName()
@@ -172,11 +178,13 @@ class MainWindow(QtWidgets.QMainWindow):
         row = __index.row() + 1
         if name is None:
             return
+
         # 数据部分
         self.actionGroupDict[name].insert(row, action)
-        self.actionGroupDict[name].save(name)
+        self.actionGroupDict[name].save()
+
         # ui 部分
-        self.upgradeActeeionListView()
+        self.upgradeActionListView()
 
 
     def delSelectedAction(self, __index):
@@ -184,11 +192,13 @@ class MainWindow(QtWidgets.QMainWindow):
         row = __index.row() + 1
         if name is None:
             return
+
         # 数据部分
         self.actionGroupDict[name].pop(row)
-        self.actionGroupDict[name].save(name)
+        self.actionGroupDict[name].save()
+
         # ui 部分
-        self.upgradeActeeionListView()
+        self.upgradeActionListView()
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
@@ -200,5 +210,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.authorAction.setText(_translate("MainWindow", "作者介绍"))
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        logger.debug(self.TAG + ": is closed.")
         for name, actionGroup in self.actionGroupDict.items():
-            actionGroup.save(name)
+            actionGroup.save()
