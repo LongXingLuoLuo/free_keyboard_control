@@ -19,38 +19,34 @@
      <widget class="QListView" name="actionGroupListView"/>
     </item>
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout">
+     <layout class="QVBoxLayout" name="actionVLayout">
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
+       <layout class="QHBoxLayout" name="actionHLayput">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <item>
-           <widget class="QPushButton" name="addActionBtn">
-            <property name="text">
-             <string>PushButton</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="removeActionBtn">
-            <property name="text">
-             <string>PushButton</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="flushActionBtn">
-            <property name="text">
-             <string>PushButton</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
+         <widget class="QPushButton" name="addActionBtn">
+          <property name="text">
+           <string>添加动作</string>
+          </property>
+         </widget>
         </item>
         <item>
-         <widget class="QListView" name="actionListView"/>
+         <widget class="QPushButton" name="removeActionBtn">
+          <property name="text">
+           <string>移除动作</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="flushActionBtn">
+          <property name="text">
+           <string>刷新动作</string>
+          </property>
+         </widget>
         </item>
        </layout>
+      </item>
+      <item>
+       <widget class="QListView" name="actionListView"/>
       </item>
      </layout>
     </item>
@@ -65,19 +61,28 @@
      <height>26</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menu">
+   <widget class="QMenu" name="aboutMenu">
     <property name="title">
-     <string>settings</string>
+     <string>about</string>
     </property>
-    <addaction name="actionabout"/>
-    <addaction name="separator"/>
+    <addaction name="authorAction"/>
    </widget>
-   <addaction name="menu"/>
+   <addaction name="aboutMenu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionabout">
    <property name="text">
     <string>about</string>
+   </property>
+  </action>
+  <action name="authorAction">
+   <property name="text">
+    <string>作者介绍</string>
+   </property>
+  </action>
+  <action name="addActionGroupAction">
+   <property name="text">
+    <string>add</string>
    </property>
   </action>
  </widget>

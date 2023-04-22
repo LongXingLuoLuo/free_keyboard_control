@@ -2,3 +2,4 @@
 /datas/
 /theme/
 /logs/
+/ui/*.py

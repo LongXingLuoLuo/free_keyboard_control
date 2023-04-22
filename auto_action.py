@@ -6,21 +6,16 @@ import time
 import pyautogui
 import pyperclip
 
+from utils import getAllFiles
+
+# 动作组数据的保存文件夹
+datasDir = './datas'
+# ! pyautogui 函数执行间隔
 pyautogui.PAUSE = 0.5
-
-
-class ActionKeyLackException(Exception):
-    def __init__(self, value):
-        super().__init__(value)
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
-
-
 # ! 动作执行间隔时间
-ACTION_PAUSE = 0.01
+ACTION_PAUSE = 0.1
 
+# * 动作类型
 MOUSE_MOVETO = 'MOUSE_MOVETO'
 MOUSE_MOVEREL = 'MOUSE_MOVEREL'
 MOUSE_CLICK = 'MOUSE_CLICK'
@@ -37,11 +32,16 @@ IMAGE_WAIT = 'IMAGE_WAIT'
 IMAGE_SCREENSHOT = 'IMAGE_SCREENSHOT'
 IMAGE_WAIT_CLICK = 'IMAGE_WAIT_CLICK'
 
-# actionName_zh = {
-#     COMMAND_RUN: '执行命令',
-#     MOUSE_MOVETO: '移动鼠标到指定位置',
-#     MOUSE_MOVEREL: '偏移鼠标',
-#     MOUSE_CLICK: '鼠标点击'}
+
+class ActionKeyLackException(Exception):
+    def __init__(self, value):
+        super().__init__(value)
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+
 actionName_en = {
     MOUSE_MOVETO: 'MOUSE_MOVETO',
     MOUSE_MOVEREL: 'MOUSE_MOVEREL',
@@ -158,16 +158,22 @@ def generateFunc(data: dict):
             pyautogui.hotkey('ctrl', 'c')
             return True
     elif actionType == TIME_DELAY:  # 延时
-        dtime = data['dtime']
+        mtime = data['mtime']
 
         def func():
             """延时"""
-            time.sleep(dtime)
+            time.sleep(mtime)
             return True
     elif actionType == ACTION_END:  # 结束动作
-        def func():
-            """结束动作"""
-            return False
+        if 'mtime' in data.keys():
+            def func():
+                """结束动作"""
+                time.sleep(mtime)
+                return False
+        else:
+            def func():
+                """结束动作"""
+                return False
     elif actionType == COMMAND_RUN:  # 运行命令
         command = data['command']
 
@@ -175,7 +181,7 @@ def generateFunc(data: dict):
             """运行命令"""
             os.system(command)
             return True
-    elif actionType == IMAGE_MOUSE_CLICK:       # 检测到图片后点击
+    elif actionType == IMAGE_MOUSE_CLICK:  # 检测到图片后点击
         path = data['path']
         clickType = data.get('clickType', 'left')
         if 'x' in data.keys() and 'y' in data.keys() and 'dx' in data.keys() and 'dy' in data.keys():
@@ -262,8 +268,10 @@ def generateFunc(data: dict):
 class ActionGroup(object):
     """动作组"""
 
-    def __init__(self, dataList: list):
+    def __init__(self, dataList: None | list[dict[str, str | int]] = None):
         super().__init__()
+        if dataList is None:
+            dataList = []
         self.dataList = dataList
         self.funcList = [generateFunc(data) for data in self.dataList]
 
@@ -278,7 +286,7 @@ class ActionGroup(object):
             time.sleep(ACTION_PAUSE)
         return True
 
-    def append(self, __data):
+    def append(self, __data: dict[str, str | int]):
         """
         从末尾添加
         :param __data:
@@ -287,7 +295,7 @@ class ActionGroup(object):
         self.dataList.append(__data)
         self.funcList.append(generateFunc(__data))
 
-    def insert(self, __index, __data):
+    def insert(self, __index: int, __data: dict[str, str | int]):
         """
         在指定下标插入新动作
         :param __index:
@@ -306,8 +314,11 @@ class ActionGroup(object):
         self.dataList.pop(__index)
         self.funcList.pop(__index)
 
+    def typeList(self) -> list[str]:
+        return [actionName_en[data['actionType']] for data in self.dataList]
+
     def __str__(self):
-        return str([actionName_en[data['actionType']] for data in self.dataList])
+        return str(self.typeList())
 
     def __repr__(self):
         return self.dataList
@@ -321,27 +332,29 @@ class ActionGroup(object):
     def __iter__(self):
         return self.dataList.__iter__()
 
-    def json(self):
+    def json(self) -> str:
         """
         返回json 类型
         :return:
         """
         return json.dumps(self.dataList)
 
-    def save(self, path):
+    def save(self, name):
         """
         保存为 json 文件
-        :param path: 文件路径
+        :param name: 文件路径
         :return:
         """
-        with open(path, encoding='UTF-8', mode='w') as f:
+        if not os.path.isdir(datasDir):
+            os.mkdir(datasDir)
+        with open(datasDir + '\\' + name + '.json', encoding='UTF-8', mode='w') as f:
             f.write(self.json())
 
     # def read(self, path):
     #     jsonData = json.loads(open(path, encoding='UTF-8'))
 
 
-def generateActionDict(actionType: str, **kwargs) -> None | dict:
+def generateAction(actionType: str, **kwargs) -> None | dict[str, str | int]:
     """
     根据参数生成字典
     MOUSE_MOVETO: x, y\n
@@ -352,8 +365,8 @@ def generateActionDict(actionType: str, **kwargs) -> None | dict:
     KEYBOARD_KEY: key:[]\n
     KEYBOARD_INPUT: string, (x, y)\n
     KEYBOARD_COPY: x, y, dx, dy\n
-    TIME_DELAY: dtime\n
-    ACTION_END: dtime\n
+    TIME_DELAY: mtime\n
+    ACTION_END: mtime\n
     COMMAND_RUN: command\n
     IMAGE_MOUSE_CLICK: path, (clickType, x, y, dx, dy)\n
     IMAGE_WAIT: path, mtime\n
@@ -367,7 +380,24 @@ def generateActionDict(actionType: str, **kwargs) -> None | dict:
     return kwargs
 
 
+def readAllJsons() -> dict[str, ActionGroup]:
+    files = getAllFiles(datasDir, '.json$')
+    actionGroupDict = {}
+    for path in files:
+        name = str(os.path.basename(path))
+        name = name[:-5]
+        with open(path, 'r') as f:
+            actionGroup = ActionGroup(json.load(f))
+            actionGroupDict[name] = actionGroup
+    return actionGroupDict
+
+
+def delJson(name: str):
+    path = datasDir + '\\' + name + '.json'
+    if os.path.isfile(path):
+        os.remove(path)
+
+
 if __name__ == '__main__':
-    ag = ActionGroup([])
-    ag.append(generateActionDict(actionType=IMAGE_WAIT_CLICK, path='./images/2023-04-19_22-37-05.png', mtime=40000))
-    print(ag.run())
+    for k, v in readAllJsons().items():
+        print(v.__repr__())
