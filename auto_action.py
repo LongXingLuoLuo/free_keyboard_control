@@ -282,6 +282,7 @@ class ActionGroup(object):
         执行该动作组的全部动作
         :return: 是否运行成功
         """
+        logger.info(self.TAG + ": running...")
         for func in self.funcList:
             if not func():
                 logger.info(self.TAG + ": run end.")
@@ -423,7 +424,7 @@ def delActionGroup(name: str):
     path = datasDir + '\\' + name + '.json'
     if os.path.isfile(path):
         os.remove(path)
-        logger.debug(f'del {name}.')
+        logger.info(f'del {name}.')
 
 
 if __name__ == '__main__':
