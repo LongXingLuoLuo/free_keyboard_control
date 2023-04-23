@@ -78,26 +78,23 @@ def generateFunc(data: dict):
         return False
 
     if actionType == MOUSE_MOVETO:  # 鼠标指定移动
-        x = data['x']
-        x = data['y']
+        x, y = data['pos']
 
         def func():
             """鼠标指定移动"""
             pyautogui.moveTo(x, y)
             return True
     elif actionType == MOUSE_MOVEREL:  # 鼠标偏移移动
-        dx = data['dx']
-        dy = data['dy']
+        x, y = data['pos']
 
         def func():
             """鼠标偏移移动"""
-            pyautogui.moveRel(dx, dy)
+            pyautogui.moveRel(x, y)
             return True
     elif actionType == MOUSE_CLICK:  # 鼠标点击
         clickType = data.get('clickType', 'left')
-        if 'x' in data.keys() and 'y' in data.keys():
-            x = data['x']
-            y = data['y']
+        if 'pos' in data.keys():
+            x, y = data['pos']
 
             def func():
                 """鼠标点击"""
@@ -109,51 +106,47 @@ def generateFunc(data: dict):
                 pyautogui.click(button=clickType)
                 return True
     elif actionType == MOUSE_DRAGTO:  # 鼠标指定拖动
-        x = data['x']
-        y = data['y']
+        x, y = data['pos']
 
         def func():
             """鼠标指定拖动"""
             pyautogui.dragTo(x, y)
             return True
     elif actionType == MOUSE_DRAGREL:  # 鼠标偏移拖动
+        x, y = data['pos']
 
         def func():
             """鼠标偏移拖动"""
-            pyautogui.dragRel(data['dy'], data['dx'])
+            pyautogui.dragRel(x, y)
             return True
     elif actionType == KEYBOARD_KEY:  # 键盘快捷键
         key = data['key']
 
         def func():
             """键盘快捷键"""
-            pyautogui.typewrite([key])
+            pyautogui.typewrite(key)
             return True
     elif actionType == KEYBOARD_INPUT:  # 键盘输入字符串
-        string = data['string']
+        inputStr = data['inputStr']
 
-        if 'x' in data.keys() and 'y' in data.keys():
-            x = data['x']
-            y = data['y']
+        if 'pos' in data.keys():
+            x, y = data['pos']
 
             def func():
                 """键盘输入字符串"""
                 pyautogui.click(x, y)
-                pyperclip.copy(string)
+                pyperclip.copy(inputStr)
                 pyautogui.hotkey('ctrl', 'v')
                 return True
         else:
             def func():
                 """键盘输入字符串"""
                 pyautogui.click()
-                pyperclip.copy(string)
+                pyperclip.copy(inputStr)
                 pyautogui.hotkey('ctrl', 'v')
                 return True
     elif actionType == KEYBOARD_COPY:  # 复制区域内的字符串
-        x = data['x']
-        y = data['y']
-        dx = data['dx']
-        dy = data['dy']
+        x, y, dx, dy = data['region']
 
         def func():
             """复制区域内的字符串"""
@@ -173,33 +166,28 @@ def generateFunc(data: dict):
                 time.sleep(1)
             return True
     elif actionType == ACTION_END:  # 结束动作
-        if 'mtime' in data.keys():
-            def func():
-                """结束动作"""
-                while time.time() < t1 + mtime:
-                    if keyboard.is_pressed(stopKey):
-                        return False
-                    time.sleep(1)
-                return False
-        else:
-            def func():
-                """结束动作"""
-                return False
+        mtime = data.get('mtime', 1)
+
+        def func():
+            """结束动作"""
+            t1 = time.time()
+            while time.time() < t1 + mtime:
+                if keyboard.is_pressed(stopKey):
+                    return False
+                time.sleep(1)
+            return False
     elif actionType == COMMAND_RUN:  # 运行命令
-        command = data['command']
+        inputStr = data['inputStr']
 
         def func():
             """运行命令"""
-            os.system(command)
+            os.system(inputStr)
             return True
     elif actionType == IMAGE_MOUSE_CLICK:  # 检测到图片后点击
         path = data['path']
         clickType = data.get('clickType', 'left')
-        if 'x' in data.keys() and 'y' in data.keys() and 'dx' in data.keys() and 'dy' in data.keys():
-            x = data['x']
-            y = data['y']
-            dx = data['dx']
-            dy = data['dy']
+        if 'region' in data.keys():
+            x, y, dx, dy = data['region']
 
             def func():
                 """检测到图片后点击"""
@@ -231,11 +219,8 @@ def generateFunc(data: dict):
             return True
     elif actionType == IMAGE_SCREENSHOT:    # 截图
         path = data['path']
-        if 'x' in data.keys() and 'y' in data.keys() and 'dx' in data.keys() and 'dy' in data.keys():
-            x = data['x']
-            y = data['y']
-            dx = data['dx']
-            dy = data['dy']
+        if 'region' in data.keys():
+            x, y, dx, dy = data['region']
 
             def func():
                 pyautogui.screenshot(path, region=(x, y, dx, dy))
@@ -248,37 +233,20 @@ def generateFunc(data: dict):
         path = data['path']
         mtime = data.get('mtime', 1000)
         clickType = data.get('clickType', 'left')
-        if 'x' in data.keys() and 'y' in data.keys() and 'dx' in data.keys() and 'dy' in data.keys():
-            x = data['x']
-            y = data['y']
-            dx = data['dx']
-            dy = data['dy']
+        region = data.get('region', (0, 0, 1920, 1080))
 
-            def func():
-                t1 = time.time()
-                while pyautogui.locateOnScreen(path, region=(x, y, dx, dy)) is None:
-                    if time.time() > t1 + mtime:
-                        return False
-                    elif keyboard.is_pressed(stopKey):
-                        return False
-                    else:
-                        time.sleep(0.05)
-                box = pyautogui.locateOnScreen(path)
-                pyautogui.click(box.left + box.width / 2, box.top + box.height / 2, button=clickType)
-                return True
-        else:
-            def func():
-                t1 = time.time()
-                while pyautogui.locateOnScreen(path) is None:
-                    if time.time() > t1 + mtime:
-                        return False
-                    elif keyboard.is_pressed(stopKey):
-                        return False
-                    else:
-                        time.sleep(0.05)
-                box = pyautogui.locateOnScreen(path)
-                pyautogui.click(box.left + box.width / 2, box.top + box.height / 2, button=clickType)
-                return True
+        def func():
+            t1 = time.time()
+            while pyautogui.locateOnScreen(path, region=region) is None:
+                if time.time() > t1 + mtime:
+                    return False
+                elif keyboard.is_pressed(stopKey):
+                    return False
+                else:
+                    time.sleep(0.05)
+            box = pyautogui.locateOnScreen(path)
+            pyautogui.click(box.left + box.width / 2, box.top + box.height / 2, button=clickType)
+            return True
     return func
 
 
@@ -403,21 +371,21 @@ class ActionGroup(object):
 def generateAction(actionType: str, **kwargs) -> None | dict[str, str | int]:
     """
     根据参数生成字典
-    MOUSE_MOVETO: x, y\n
-    MOUSE_MOVEREL: dx, dy\n
-    MOUSE_CLICK: (x, y, clickType)\n
-    MOUSE_DRAGTO: x, y\n
-    MOUSE_DRAGREL: dx, dy\n
+    MOUSE_MOVETO: pos\n
+    MOUSE_MOVEREL: pos\n
+    MOUSE_CLICK: (pos, clickType)\n
+    MOUSE_DRAGTO: pos\n
+    MOUSE_DRAGREL: pos\n
     KEYBOARD_KEY: key:[]\n
-    KEYBOARD_INPUT: string, (x, y)\n
-    KEYBOARD_COPY: x, y, dx, dy\n
+    KEYBOARD_INPUT: inputStr, (pos)\n
+    KEYBOARD_COPY: region\n
     TIME_DELAY: mtime\n
     ACTION_END: mtime\n
-    COMMAND_RUN: command\n
-    IMAGE_MOUSE_CLICK: path, (clickType, x, y, dx, dy)\n
+    COMMAND_RUN: inputStr\n
+    IMAGE_MOUSE_CLICK: path, (clickType, region)\n
     IMAGE_WAIT: path, mtime\n
-    IMAGE_SCREENSHOT: path, (x, y, dx, dy, mtime)\n
-    IMAGE_WAIT_CLICK: path, (x, y, dx, dy, mtime)\n
+    IMAGE_SCREENSHOT: path, (region, mtime)\n
+    IMAGE_WAIT_CLICK: path, (region, mtime)\n
     :param actionType: 动作类型
     :param kwargs: 动作的参数
     :return: 包含所有参数的字典

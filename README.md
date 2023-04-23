@@ -25,6 +25,35 @@
 
 ### UI 需求
 
-+ [ ]  显示已经保存的全部文件
-+ [ ]  自定义程序
-+ [ ]  实时显示鼠标位置的信息框
++ [X]  用户添加指定名字的动作组
++ [ ]  添加动作
++ [ ]  可以拖动改变动作顺序
++ [ ]  通过按键读取鼠标位置
++ [ ]  通过按键获取指定区域
+
+### 添加新动作界面
+
+```
+MOUSE_MOVETO: x, y\n
+MOUSE_MOVEREL: dx, dy\n
+MOUSE_CLICK: (x, y, clickType)\n
+MOUSE_DRAGTO: x, y\n
+MOUSE_DRAGREL: dx, dy\n
+KEYBOARD_KEY: key:[]\n
+KEYBOARD_INPUT: string, (x, y)\n
+KEYBOARD_COPY: x, y, dx, dy\n
+TIME_DELAY: mtime\n
+ACTION_END: mtime\n
+COMMAND_RUN: command\n
+IMAGE_MOUSE_CLICK: path, (clickType, x, y, dx, dy)\n
+IMAGE_WAIT: path, mtime\n
+IMAGE_SCREENSHOT: path, (x, y, dx, dy, mtime)\n
+IMAGE_WAIT_CLICK: path, (x, y, dx, dy, mtime)\n
+```
+坐标 pos: (x, y)
+区域 region: (left, top, width, height)
+点击类型 clickType[left, right, middle]
+按键 key: []
+输入文本 inputStr
+最大时间 mtime: double
+图片路径 path: filepath
