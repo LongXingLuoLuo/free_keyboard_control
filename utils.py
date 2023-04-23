@@ -30,8 +30,8 @@ def getPositionByKey():
 
     with pynput.keyboard.Listener(on_press=on_press, daemon=daemon) as h:
         h.join()
-
-    return pyautogui.position()
+    x, y = pyautogui.position()
+    return x, y
 
 
 def getBoxByKey():

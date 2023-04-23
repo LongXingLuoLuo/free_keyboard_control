@@ -3,8 +3,8 @@ import json
 import os
 import time
 
-import pyautogui
 import keyboard
+import pyautogui
 import pyperclip
 
 from log_config import logger
@@ -46,22 +46,28 @@ class ActionKeyLackException(Exception):
         return repr(self.value)
 
 
-actionName_en = {
-    MOUSE_MOVETO: 'MOUSE_MOVETO',
-    MOUSE_MOVEREL: 'MOUSE_MOVEREL',
-    MOUSE_CLICK: 'MOUSE_CLICK',
-    MOUSE_DRAGTO: 'MOUSE_DRAGTO',
-    MOUSE_DRAGREL: 'MOUSE_DRAGREL',
-    KEYBOARD_KEY: 'KEYBOARD_KEY',
-    KEYBOARD_INPUT: 'KEYBOARD_INPUT',
-    KEYBOARD_COPY: 'KEYBOARD_COPY',
-    TIME_DELAY: 'TIME_DELAY',
-    ACTION_END: 'ACTION_END',
-    COMMAND_RUN: 'COMMAND_RUN',
-    IMAGE_MOUSE_CLICK: 'IMAGE_MOUSE_CLICK',
-    IMAGE_WAIT: 'IMAGE_WAIT',
-    IMAGE_SCREENSHOT: 'IMAGE_SCREENSHOT',
-    IMAGE_WAIT_CLICK: 'IMAGE_WAIT_CLICK',
+actionTypeName = {
+    MOUSE_MOVETO: '鼠标移动到指定位置',
+    MOUSE_MOVEREL: '鼠标移动距离',
+    MOUSE_CLICK: '鼠标点击',
+    MOUSE_DRAGTO: '鼠标拖动到指定位置',
+    MOUSE_DRAGREL: '鼠标拖动量',
+    KEYBOARD_KEY: '模拟按键点击',
+    KEYBOARD_INPUT: '输入文本',
+    KEYBOARD_COPY: '复制区域内文本',
+    TIME_DELAY: '延时',
+    ACTION_END: '结束执行',
+    COMMAND_RUN: '运行cmd命令',
+    IMAGE_MOUSE_CLICK: '点击屏幕上所有指定图片',
+    IMAGE_WAIT: '等待直到屏幕上出现指定图片',
+    IMAGE_SCREENSHOT: '截图',
+    IMAGE_WAIT_CLICK: '屏幕上出现指定图片后点击一次',
+}
+
+clickTypeName = {
+    'left': '左键',
+    'middle': '中键',
+    'right': '右键',
 }
 
 
@@ -93,18 +99,12 @@ def generateFunc(data: dict):
             return True
     elif actionType == MOUSE_CLICK:  # 鼠标点击
         clickType = data.get('clickType', 'left')
-        if 'pos' in data.keys():
-            x, y = data['pos']
+        x, y = data['pos']
 
-            def func():
-                """鼠标点击"""
-                pyautogui.click(button=clickType, x=x, y=y)
-                return True
-        else:
-            def func():
-                """鼠标点击"""
-                pyautogui.click(button=clickType)
-                return True
+        def func():
+            """鼠标点击"""
+            pyautogui.click(button=clickType, x=x, y=y)
+            return True
     elif actionType == MOUSE_DRAGTO:  # 鼠标指定拖动
         x, y = data['pos']
 
@@ -124,27 +124,18 @@ def generateFunc(data: dict):
 
         def func():
             """键盘快捷键"""
-            pyautogui.typewrite(key)
+            pyautogui.hotkey(*key)
             return True
     elif actionType == KEYBOARD_INPUT:  # 键盘输入字符串
         inputStr = data['inputStr']
+        x, y = data['pos']
 
-        if 'pos' in data.keys():
-            x, y = data['pos']
-
-            def func():
-                """键盘输入字符串"""
-                pyautogui.click(x, y)
-                pyperclip.copy(inputStr)
-                pyautogui.hotkey('ctrl', 'v')
-                return True
-        else:
-            def func():
-                """键盘输入字符串"""
-                pyautogui.click()
-                pyperclip.copy(inputStr)
-                pyautogui.hotkey('ctrl', 'v')
-                return True
+        def func():
+            """键盘输入字符串"""
+            pyautogui.click(x, y)
+            pyperclip.copy(inputStr)
+            pyautogui.hotkey('ctrl', 'v')
+            return True
     elif actionType == KEYBOARD_COPY:  # 复制区域内的字符串
         x, y, dx, dy = data['region']
 
@@ -166,7 +157,7 @@ def generateFunc(data: dict):
                 time.sleep(1)
             return True
     elif actionType == ACTION_END:  # 结束动作
-        mtime = data.get('mtime', 1)
+        mtime = data['mtime']
 
         def func():
             """结束动作"""
@@ -185,25 +176,17 @@ def generateFunc(data: dict):
             return True
     elif actionType == IMAGE_MOUSE_CLICK:  # 检测到图片后点击
         path = data['path']
-        clickType = data.get('clickType', 'left')
-        if 'region' in data.keys():
-            x, y, dx, dy = data['region']
+        clickType = data['clickType']
+        x, y, dx, dy = data['region']
 
-            def func():
-                """检测到图片后点击"""
-                boxes = pyautogui.locateAllOnScreen(path)
-                for box in boxes:
-                    pyautogui.click(box.left + box.width / 2, box.top + box.height / 2, button=clickType,
-                                    region=(x, y, dx, dy))
-                return True
-        else:
-            def func():
-                """检测到图片后点击"""
-                boxes = pyautogui.locateAllOnScreen(path)
-                for box in boxes:
-                    pyautogui.click(box.left + box.width / 2, box.top + box.height / 2, button=clickType)
-                return True
-    elif actionType == IMAGE_WAIT:      # 直到检测到图片后执行
+        def func():
+            """检测到图片后点击"""
+            boxes = pyautogui.locateAllOnScreen(path)
+            for box in boxes:
+                pyautogui.click(box.left + box.width / 2, box.top + box.height / 2, button=clickType,
+                                region=(x, y, dx, dy))
+            return True
+    elif actionType == IMAGE_WAIT:  # 直到检测到图片后执行
         path = data['path']
         mtime = data.get('mtime', 1000)
 
@@ -217,22 +200,17 @@ def generateFunc(data: dict):
                 else:
                     time.sleep(0.05)
             return True
-    elif actionType == IMAGE_SCREENSHOT:    # 截图
+    elif actionType == IMAGE_SCREENSHOT:  # 截图
         path = data['path']
-        if 'region' in data.keys():
-            x, y, dx, dy = data['region']
+        x, y, dx, dy = data['region']
 
-            def func():
-                pyautogui.screenshot(path, region=(x, y, dx, dy))
-                return True
-        else:
-            def func():
-                pyautogui.screenshot(path)
-                return True
-    elif actionType == IMAGE_WAIT_CLICK:        # 检测到图片后点击
+        def func():
+            pyautogui.screenshot(path, region=(x, y, dx, dy))
+            return True
+    elif actionType == IMAGE_WAIT_CLICK:  # 检测到图片后点击
         path = data['path']
         mtime = data.get('mtime', 1000)
-        clickType = data.get('clickType', 'left')
+        clickType = data['clickType']
         region = data.get('region', (0, 0, 1920, 1080))
 
         def func():
@@ -250,6 +228,74 @@ def generateFunc(data: dict):
     return func
 
 
+def generateExplain(data: dict[str, str]) -> str:
+    """
+    获取动作的简要解释
+    :param data: 动作
+    :return: 动作的简要解释
+    """
+    actionType = data['actionType']
+    if actionType == MOUSE_MOVETO:  # 鼠标指定移动
+        x, y = data['pos']
+        return f"鼠标移动到({x}, {y})"
+    elif actionType == MOUSE_MOVEREL:  # 鼠标偏移移动
+        x, y = data['pos']
+        return f"鼠标偏移移动({x}, {y})"
+    elif actionType == MOUSE_CLICK:  # 鼠标点击
+        clickType = data.get('clickType', 'left')
+        x, y = data['pos']
+        return f"在({x}, {y})鼠标点击({clickType})"
+    elif actionType == MOUSE_DRAGTO:  # 鼠标指定拖动
+        x, y = data['pos']
+        return f"鼠标拖动到({x}, {y})"
+    elif actionType == MOUSE_DRAGREL:  # 鼠标偏移拖动
+        x, y = data['pos']
+        return f"鼠标偏移拖动({x}, {y})"
+    elif actionType == KEYBOARD_KEY:  # 键盘快捷键
+        key = data['key']
+        return f"模拟按下({'+'.join(key)})"
+    elif actionType == KEYBOARD_INPUT:  # 键盘输入字符串
+        inputStr = data['inputStr']
+        x, y = data['pos']
+        return f"在({x}, {y})输入字符串{inputStr}"
+    elif actionType == KEYBOARD_COPY:  # 复制区域内的字符串
+        x, y, dx, dy = data['region']
+        return f"复制({x}, {y}, {dx}, {dy})区域内的字符串"
+    elif actionType == TIME_DELAY:  # 延时
+        mtime = data['mtime']
+        return f"延时 {mtime}s"
+    elif actionType == ACTION_END:  # 结束动作
+        mtime = data['mtime']
+        return f"{mtime}s 后结束"
+    elif actionType == COMMAND_RUN:  # 运行命令
+        inputStr = data['inputStr']
+        return f"运行 {inputStr}"
+    elif actionType == IMAGE_MOUSE_CLICK:  # 检测到图片后点击
+        path = data['path']
+        path = os.path.basename(path)
+        clickType = data['clickType']
+        x, y, dx, dy = data['region']
+        return f"检测({x}, {y}, {dx}, {dy})区域内点击({clickType}) {path}"
+    elif actionType == IMAGE_WAIT:  # 直到检测到图片后执行
+        path = data['path']
+        path = os.path.basename(path)
+        mtime = data.get('mtime', 1000)
+        return f"在 {mtime}s 内检测是否有 {path}"
+    elif actionType == IMAGE_SCREENSHOT:  # 截图
+        path = data['path']
+        path = os.path.basename(path)
+        x, y, dx, dy = data['region']
+        return f"在({x}, {y}, {dx}, {dy})区域内截图，保存为 {path}"
+    elif actionType == IMAGE_WAIT_CLICK:  # 检测到图片后点击
+        path = data['path']
+        path = os.path.basename(path)
+        mtime = data.get('mtime', 1000)
+        clickType = data['clickType']
+        x, y, dx, dy = data.get('region', (0, 0, 1920, 1080))
+        return f"在 {mtime}s 内检测({x}, {y}, {dx}, {dy})区域内检测到 {path} 后点击图片({clickType})"
+    return ''
+
+
 class ActionGroup(object):
     """动作组"""
 
@@ -260,6 +306,7 @@ class ActionGroup(object):
         self.dataList = dataList
         self.name = name
         self.funcList = [generateFunc(data) for data in self.dataList]
+        self.explainList = [generateExplain(data) for data in self.dataList]
         self.TAG = f"ActionGroup[{self.name}]"
 
     def run(self):
@@ -285,6 +332,7 @@ class ActionGroup(object):
         """
         self.dataList.append(__data)
         self.funcList.append(generateFunc(__data))
+        self.explainList.append(generateExplain(__data))
         logger.debug(self.TAG + f": append {__data}.")
 
     def insert(self, __index: int, __data: dict[str, str | int]):
@@ -296,6 +344,7 @@ class ActionGroup(object):
         """
         self.dataList.insert(__index, __data)
         self.funcList.insert(__index, generateFunc(__data))
+        self.explainList.insert(__index, generateExplain(__data))
         logger.debug(self.TAG + f": insert ({__index}) {__data}.")
 
     def pop(self, __index: int):
@@ -306,13 +355,11 @@ class ActionGroup(object):
         """
         self.dataList.pop(__index)
         self.funcList.pop(__index)
+        self.explainList.pop(__index)
         logger.debug(self.TAG + f": pop {__index}.")
 
-    def typeList(self) -> list[str]:
-        return [actionName_en[data['actionType']] for data in self.dataList]
-
     def __str__(self):
-        return str(self.typeList())
+        return str(self.explainList)
 
     def __repr__(self):
         return self.dataList
@@ -347,7 +394,6 @@ class ActionGroup(object):
             os.mkdir(datasDir)
         path = os.path.abspath(datasDir + '\\' + self.name + '.json')
         return path
-
 
     def save(self):
         """
@@ -404,7 +450,6 @@ def readAllJsons() -> dict[str, ActionGroup]:
             actionGroup = ActionGroup(name=name, dataList=json.load(f))
             actionGroupDict[name] = actionGroup
     return actionGroupDict
-
 
 
 if __name__ == '__main__':

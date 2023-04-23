@@ -1,9 +1,12 @@
 # -*- coding:UTF-8 -*-
+import os.path
+import re
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import pyqtSlot, QPoint, QModelIndex
 
 import auto_action
+import utils
 from log_config import logger
 
 
@@ -80,9 +83,293 @@ class ActionGroupNameDialog(QtWidgets.QDialog):
         self.setWindowTitle(_translate("ActionGroupNameDialog", "新动作组名字"))
         self.label.setText(_translate("ActionGroupNameDialog", "输入要添加的新动作组名字："))
 
-
     def getInput(self) -> str:
         return self.lineEdit.text().strip()
+
+
+class ActionDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super(ActionDialog, self).__init__(parent)
+        self.verticalLayout = QtWidgets.QVBoxLayout(self)
+        self.actionTypeHLayout = QtWidgets.QHBoxLayout()
+        self.actionTypeLabel = QtWidgets.QLabel(self)
+        self.actionTypeComboBox = QtWidgets.QComboBox(self)
+        self.posHLayout = QtWidgets.QHBoxLayout()
+        self.posLabel = QtWidgets.QLabel(self)
+        self.posLineEdit = QtWidgets.QLineEdit(self)
+        self.posBtn = QtWidgets.QPushButton(self)
+        self.regionHLayout = QtWidgets.QHBoxLayout()
+        self.regionLabel = QtWidgets.QLabel(self)
+        self.regionLineEdit = QtWidgets.QLineEdit(self)
+        self.regionBtn = QtWidgets.QPushButton(self)
+        self.clickTypeHLayout = QtWidgets.QHBoxLayout()
+        self.clickTypeLabel = QtWidgets.QLabel(self)
+        self.clickTypeComboBox = QtWidgets.QComboBox(self)
+        self.keyHLayout = QtWidgets.QHBoxLayout()
+        self.keySequenceEdit = QtWidgets.QKeySequenceEdit(self)
+        self.keyLabel = QtWidgets.QLabel(self)
+        self.keySequenceEdit.setCursor(QtGui.QCursor(QtCore.Qt.IBeamCursor))
+        self.inputStrHLayout = QtWidgets.QHBoxLayout()
+        self.inputStrLabel = QtWidgets.QLabel(self)
+        self.inputStrLineEdit = QtWidgets.QLineEdit(self)
+        self.mtimeHLayout = QtWidgets.QHBoxLayout()
+        self.mtimeLabel = QtWidgets.QLabel(self)
+        self.mtimeDoubleSpinBox = QtWidgets.QDoubleSpinBox(self)
+        self.pathHLayout = QtWidgets.QHBoxLayout()
+        self.pathLabel = QtWidgets.QLabel(self)
+        self.pathLineEdit = QtWidgets.QLineEdit(self)
+        self.pathBtn = QtWidgets.QPushButton(self)
+        self.buttonBox = QtWidgets.QDialogButtonBox(self)
+
+        self.setupUi()
+
+    def setupUi(self):
+        self.setObjectName("ActionDialog")
+        self.resize(510, 469)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.actionTypeHLayout.setObjectName("actionTypeHLayout")
+        self.actionTypeLabel.setObjectName("actionTypeLabel")
+        self.actionTypeHLayout.addWidget(self.actionTypeLabel)
+        self.actionTypeComboBox.setObjectName("actionTypeComboBox")
+        for k, v in auto_action.actionTypeName.items():
+            self.actionTypeComboBox.addItem(v, k)
+        self.actionTypeHLayout.addWidget(self.actionTypeComboBox)
+        self.verticalLayout.addLayout(self.actionTypeHLayout)
+        self.posHLayout.setObjectName("posHLayout")
+        self.posLabel.setObjectName("posLabel")
+        self.posHLayout.addWidget(self.posLabel)
+        self.posLineEdit.setAlignment(QtCore.Qt.AlignCenter)
+        self.posLineEdit.setObjectName("posLineEdit")
+        self.posHLayout.addWidget(self.posLineEdit)
+        self.posBtn.setObjectName("posBtn")
+        self.posHLayout.addWidget(self.posBtn)
+        self.verticalLayout.addLayout(self.posHLayout)
+        self.regionHLayout.setObjectName("regionHLayout")
+        self.regionLabel.setObjectName("regionLabel")
+        self.regionHLayout.addWidget(self.regionLabel)
+        self.regionLineEdit.setAlignment(QtCore.Qt.AlignCenter)
+        self.regionLineEdit.setObjectName("regionLineEdit")
+        self.regionHLayout.addWidget(self.regionLineEdit)
+        self.regionBtn.setObjectName("regionBtn")
+        self.regionHLayout.addWidget(self.regionBtn)
+        self.verticalLayout.addLayout(self.regionHLayout)
+        self.clickTypeHLayout.setObjectName("clickTypeHLayout")
+        self.clickTypeLabel.setObjectName("clickTypeLabel")
+        self.clickTypeHLayout.addWidget(self.clickTypeLabel)
+        self.clickTypeComboBox.setObjectName("clickTypeComboBox")
+        for k, v in auto_action.clickTypeName.items():
+            self.clickTypeComboBox.addItem(v, k)
+        self.clickTypeHLayout.addWidget(self.clickTypeComboBox)
+        self.verticalLayout.addLayout(self.clickTypeHLayout)
+        self.keyHLayout.setObjectName("keyHLayout")
+        self.keyLabel.setObjectName("keyLabel")
+        self.keyHLayout.addWidget(self.keyLabel)
+        self.keySequenceEdit.setObjectName("keySequenceEdit")
+        self.keyHLayout.addWidget(self.keySequenceEdit)
+        self.verticalLayout.addLayout(self.keyHLayout)
+        self.inputStrHLayout.setObjectName("inputStrHLayout")
+        self.inputStrLabel.setObjectName("inputStrLabel")
+        self.inputStrHLayout.addWidget(self.inputStrLabel)
+        self.inputStrLineEdit.setObjectName("inputStrLineEdit")
+        self.inputStrHLayout.addWidget(self.inputStrLineEdit)
+        self.verticalLayout.addLayout(self.inputStrHLayout)
+        self.mtimeHLayout.setObjectName("mtimeHLayout")
+        self.mtimeLabel.setObjectName("mtimeLabel")
+        self.mtimeHLayout.addWidget(self.mtimeLabel)
+        self.mtimeDoubleSpinBox.setMaximum(10000.0)
+        self.mtimeDoubleSpinBox.setObjectName("mtimeDoubleSpinBox")
+        self.mtimeHLayout.addWidget(self.mtimeDoubleSpinBox)
+        self.verticalLayout.addLayout(self.mtimeHLayout)
+        self.pathHLayout.setObjectName("pathHLayout")
+        self.pathLabel.setObjectName("pathLabel")
+        self.pathHLayout.addWidget(self.pathLabel)
+        self.pathLineEdit.setObjectName("pathLineEdit")
+        self.pathHLayout.addWidget(self.pathLineEdit)
+        self.pathBtn.setObjectName("pathBtn")
+        self.pathHLayout.addWidget(self.pathBtn)
+        self.verticalLayout.addLayout(self.pathHLayout)
+        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setObjectName("buttonBox")
+        self.verticalLayout.addWidget(self.buttonBox)
+        self.retranslateUi()
+        self.buttonBox.accepted.connect(self.accept)  # type: ignore
+        self.buttonBox.rejected.connect(self.reject)  # type: ignore
+        QtCore.QMetaObject.connectSlotsByName(self)
+
+        self.actionTypeComboBox.setCurrentIndex(0)
+        self.actionTypeComboBox.setCurrentIndex(1)
+        self.actionTypeComboBox.setCurrentIndex(0)
+
+    def retranslateUi(self):
+        _translate = QtCore.QCoreApplication.translate
+        self.setWindowTitle(_translate("ActionDialog", "添加新动作"))
+        self.actionTypeLabel.setText(_translate("ActionDialog", "选择动作类型"))
+        self.posLabel.setText(_translate("ActionDialog", "坐标向量"))
+        self.posLineEdit.setInputMask(_translate("ActionDialog", "(9999, 9999)"))
+        self.posLineEdit.setText(_translate("ActionDialog", "(0000, 0000)"))
+        self.posBtn.setText(_translate("ActionDialog", "选择坐标向量"))
+        self.regionLabel.setText(_translate("ActionDialog", "选择区域"))
+        self.regionLineEdit.setInputMask(_translate("ActionDialog", "(9999, 9999, 9999, 9999)"))
+        self.regionLineEdit.setText(_translate("ActionDialog", "(0000, 0000, 1920, 1080)"))
+        self.regionBtn.setText(_translate("ActionDialog", "选择区域"))
+        self.clickTypeLabel.setText(_translate("ActionDialog", "选择点击类型"))
+        self.keyLabel.setText(_translate("ActionDialog", "输入按键"))
+        self.inputStrLabel.setText(_translate("ActionDialog", "文本输入"))
+        self.mtimeLabel.setText(_translate("ActionDialog", "最大时间输入"))
+        self.pathLabel.setText(_translate("ActionDialog", "图片路径输入"))
+        self.pathBtn.setText(_translate("ActionDialog", "选择图片路径"))
+
+    @pyqtSlot(int)
+    def on_actionTypeComboBox_currentIndexChanged(self, __index: int):
+        """
+        根据 actionType 选中改变布局
+        :param __index: 当前选中
+        :return:
+        """
+        actionType = self.actionTypeComboBox.currentData()
+        if actionType in [auto_action.MOUSE_MOVETO, auto_action.MOUSE_MOVEREL, auto_action.MOUSE_CLICK,
+                          auto_action.MOUSE_DRAGTO, auto_action.MOUSE_DRAGREL, auto_action.KEYBOARD_INPUT]:
+            self.posBtn.show()
+            self.posLineEdit.show()
+            self.posLabel.show()
+        else:
+            self.posBtn.hide()
+            self.posLineEdit.hide()
+            self.posLabel.hide()
+        if actionType in [auto_action.KEYBOARD_COPY, auto_action.IMAGE_MOUSE_CLICK, auto_action.IMAGE_SCREENSHOT,
+                          auto_action.IMAGE_WAIT_CLICK]:
+            self.regionBtn.show()
+            self.regionLabel.show()
+            self.regionLineEdit.show()
+        else:
+            self.regionBtn.hide()
+            self.regionLabel.hide()
+            self.regionLineEdit.hide()
+        if actionType in [auto_action.MOUSE_CLICK, auto_action.IMAGE_MOUSE_CLICK]:
+            self.clickTypeComboBox.show()
+            self.clickTypeLabel.show()
+        else:
+            self.clickTypeComboBox.hide()
+            self.clickTypeLabel.hide()
+        if actionType in [auto_action.KEYBOARD_KEY]:
+            self.keyLabel.show()
+            self.keySequenceEdit.show()
+        else:
+            self.keyLabel.hide()
+            self.keySequenceEdit.hide()
+        if actionType in [auto_action.COMMAND_RUN, auto_action.KEYBOARD_INPUT]:
+            self.inputStrLabel.show()
+            self.inputStrLineEdit.show()
+        else:
+            self.inputStrLabel.hide()
+            self.inputStrLineEdit.hide()
+        if actionType in [auto_action.TIME_DELAY, auto_action.ACTION_END, auto_action.IMAGE_WAIT,
+                          auto_action.IMAGE_SCREENSHOT, auto_action.IMAGE_WAIT_CLICK]:
+            self.mtimeLabel.show()
+            self.mtimeDoubleSpinBox.show()
+        else:
+            self.mtimeLabel.hide()
+            self.mtimeDoubleSpinBox.hide()
+        if actionType in [auto_action.IMAGE_MOUSE_CLICK, auto_action.IMAGE_WAIT, auto_action.IMAGE_SCREENSHOT,
+                          auto_action.IMAGE_WAIT_CLICK]:
+            self.pathBtn.show()
+            self.pathLabel.show()
+            self.pathLineEdit.show()
+        else:
+            self.pathBtn.hide()
+            self.pathLabel.hide()
+            self.pathLineEdit.hide()
+
+    @pyqtSlot()
+    def on_posBtn_clicked(self):
+        self.showMinimized()
+        x, y = utils.getPositionByKey()
+        self.posLineEdit.setText("(%04d, %04d)" % (x, y))
+        self.showNormal()
+
+    @pyqtSlot()
+    def on_regionBtn_clicked(self):
+        self.showMinimized()
+        left, top, width, height = utils.getBoxByKey()
+        self.regionLineEdit.setText("(%04d, %04d, %04d, %04d)" % (left, top, width, height))
+        self.showNormal()
+
+    @pyqtSlot()
+    def on_pathBtn_clicked(self):
+        self.showMinimized()
+        if not os.path.exists(utils.imagesPath):
+            os.mkdir(utils.imagesPath)
+        path = QtWidgets.QFileDialog.getOpenFileName(self, directory=utils.imagesPath, filter='*.png')
+        if path is None:
+            path = ''
+        elif len(path) == 0:
+            path = ''
+        self.pathLineEdit.setText(path[0])
+        self.showNormal()
+
+    def getActionType(self):
+        return self.actionTypeComboBox.currentData()
+
+    def getPos(self) -> (int, int):
+        cp = re.compile('^\((\d+), (\d+)\)')
+        match = cp.match(self.posLineEdit.text())
+        if len(match.groups()) < 2:
+            return 0, 0
+        x = int(match.group(1))
+        y = int(match.group(2))
+        pos = (x, y)
+        return pos
+
+    def getRegion(self) -> (int, int, int, int):
+        cp = re.compile('^\((\d+), (\d+), (\d+), (\d+)\)')
+        match = cp.match(self.regionLineEdit.text())
+        if len(match.groups()) < 4:
+            return 0, 0, 0, 0
+        x = int(match.group(1))
+        y = int(match.group(2))
+        dx = int(match.group(3))
+        dy = int(match.group(4))
+        return x, y, dx, dy
+
+
+
+    def getClickType(self) -> str:
+        return self.clickTypeComboBox.currentData()
+
+    def getKey(self) -> list:
+        return self.keySequenceEdit.keySequence().toString().split('+')
+
+    def getInputStr(self) -> str:
+        return self.inputStrLineEdit.text()
+
+    def getMtime(self) -> float:
+        return self.mtimeDoubleSpinBox.value()
+
+    def getPath(self) -> str:
+        return self.pathLineEdit.text().strip()
+
+    def getAction(self) -> dict:
+        """
+        获取输入数据
+        :return: 输入数据
+        """
+        data = {'actionType': self.getActionType()}
+        if not self.posLineEdit.isHidden():
+            data['pos'] = self.getPos()
+        if not self.regionLineEdit.isHidden():
+            data['region'] = self.getRegion()
+        if not self.clickTypeComboBox.isHidden():
+            data['clickType'] = self.getClickType()
+        if not self.keySequenceEdit.isHidden():
+            data['key'] = self.getKey()
+        if not self.inputStrLineEdit.isHidden():
+            data['inputStr'] = self.getInputStr()
+        if not self.mtimeDoubleSpinBox.isHidden():
+            data['mtime'] = self.getMtime()
+        if not self.pathLineEdit.isHidden():
+            data['path'] = self.getPath()
+        return data
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -100,10 +387,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.runActionBtn = QtWidgets.QPushButton(self.centralWidget)
         self.actionListView = QtWidgets.QListView(self.centralWidget)
         self.menubar = QtWidgets.QMenuBar(self)
-        self.aboutMenu = QtWidgets.QMenu(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(self)
-        self.authorAction = QtWidgets.QAction(self)
+        self.aboutAction = QtWidgets.QAction(self)
         self.addActionGroupAction = QtWidgets.QAction(self)
+        self.screenShotAction = QtWidgets.QAction(self)
         self.authorWidget = AuthorWidget()
         self.authorWidget.hide()
 
@@ -144,13 +431,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.centralWidget)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 26))
         self.menubar.setObjectName("menubar")
-        self.aboutMenu.setObjectName("aboutMenu")
         self.setMenuBar(self.menubar)
         self.statusbar.setObjectName("statusbar")
         self.setStatusBar(self.statusbar)
-        self.authorAction.setObjectName("authorAction")
-        self.aboutMenu.addAction(self.authorAction)
-        self.menubar.addAction(self.aboutMenu.menuAction())
+        self.aboutAction.setObjectName("aboutAction")
+        self.menubar.addAction(self.aboutAction)
+        self.screenShotAction.setObjectName("screenShotAction")
+        self.menubar.addAction(self.screenShotAction)
 
         self.retranslateUi()
         QtCore.QMetaObject.connectSlotsByName(self)
@@ -161,11 +448,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.actionListView.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.actionListView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        self.actionListView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
     @pyqtSlot()
-    def on_authorAction_triggered(self):
+    def on_aboutAction_triggered(self):
         self.authorWidget.show()
+
+    @pyqtSlot()
+    def on_screenShotAction_triggered(self):
+        utils.screenShotByKey()
+
 
     @pyqtSlot(QPoint)
     def on_actionGroupListView_customContextMenuRequested(self, pos):
@@ -175,7 +466,7 @@ class MainWindow(QtWidgets.QMainWindow):
         :return:
         """
         menu = QtWidgets.QMenu()
-        addAction = menu.addAction("插入新动作组")
+        addAction = menu.addAction("添加新动作组")
         delAction = menu.addAction("删除选中动作组")
         action = menu.exec_(self.actionGroupListView.mapToGlobal(pos))
         if action == addAction:
@@ -200,8 +491,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_addActionBtn_clicked(self):
-        # self.addNewAction()
-        self.addNewAction()
+        if self.getSelectedActionGroupName() is None:
+            return
+        dialog = ActionDialog()
+        self.hide()
+        dialog.show()
+        res = dialog.exec()
+        if res == QtWidgets.QDialog.Accepted:
+            action = dialog.getAction()
+            self.addNewAction(action)
+        self.show()
 
     @pyqtSlot()
     def on_delActionBtn_clicked(self):
@@ -238,7 +537,7 @@ class MainWindow(QtWidgets.QMainWindow):
             index = self.actionListView.selectedIndexes()[0]
             return index.row()
         else:
-            return -1
+            return self.actionListModel.rowCount() - 1
 
     def upgradeActionListView(self):
         """
@@ -250,7 +549,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.actionListModel.setStringList([])
         else:
             actionGroup = self.actionGroupDict[name]
-            self.actionListModel.setStringList(actionGroup.typeList())
+            self.actionListModel.setStringList(actionGroup.explainList)
 
     def addNewActionGroup(self, name: str):
         """
@@ -293,11 +592,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionGroupDict[name].deleteFile()
         self.actionGroupDict.pop(name)
 
-    def addNewAction(self):
+    def addNewAction(self, action: dict):
         name = self.getSelectedActionGroupName()
         if name is None:
             return
-        action = auto_action.generateAction(actionType=auto_action.TIME_DELAY, mtime=1000)
         row = self.getSelectedActionRow() + 1
 
         # 数据部分
@@ -338,8 +636,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addActionBtn.setText(_translate("MainWindow", "插入动作"))
         self.delActionBtn.setText(_translate("MainWindow", "移除动作"))
         self.runActionBtn.setText(_translate("MainWindow", "运行动作组"))
-        self.aboutMenu.setTitle(_translate("MainWindow", "关于"))
-        self.authorAction.setText(_translate("MainWindow", "作者介绍"))
+        self.aboutAction.setText(_translate("MainWindow", "关于"))
+        self.screenShotAction.setText(_translate("MainWindow", "截图"))
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         logger.debug(self.TAG + ": is closed.")

@@ -34,26 +34,26 @@
 ### 添加新动作界面
 
 ```
-MOUSE_MOVETO: x, y\n
-MOUSE_MOVEREL: dx, dy\n
-MOUSE_CLICK: (x, y, clickType)\n
-MOUSE_DRAGTO: x, y\n
-MOUSE_DRAGREL: dx, dy\n
+MOUSE_MOVETO: pos\n
+MOUSE_MOVEREL: pos\n
+MOUSE_CLICK: (pos, clickType)\n
+MOUSE_DRAGTO: pos\n
+MOUSE_DRAGREL: pos\n
 KEYBOARD_KEY: key:[]\n
-KEYBOARD_INPUT: string, (x, y)\n
-KEYBOARD_COPY: x, y, dx, dy\n
+KEYBOARD_INPUT: inputStr, (pos)\n
+KEYBOARD_COPY: region\n
 TIME_DELAY: mtime\n
 ACTION_END: mtime\n
-COMMAND_RUN: command\n
-IMAGE_MOUSE_CLICK: path, (clickType, x, y, dx, dy)\n
+COMMAND_RUN: inputStr\n
+IMAGE_MOUSE_CLICK: path, (clickType, region)\n
 IMAGE_WAIT: path, mtime\n
-IMAGE_SCREENSHOT: path, (x, y, dx, dy, mtime)\n
-IMAGE_WAIT_CLICK: path, (x, y, dx, dy, mtime)\n
+IMAGE_SCREENSHOT: path, (region, mtime)\n
+IMAGE_WAIT_CLICK: path, (region, mtime)\n
 ```
 坐标 pos: (x, y)
 区域 region: (left, top, width, height)
 点击类型 clickType[left, right, middle]
 按键 key: []
 输入文本 inputStr
-最大时间 mtime: double
+最大时间 mtime: float
 图片路径 path: filepath
