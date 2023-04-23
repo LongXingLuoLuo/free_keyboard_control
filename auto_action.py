@@ -4,6 +4,7 @@ import os
 import time
 
 import pyautogui
+import keyboard
 import pyperclip
 
 from log_config import logger
@@ -15,6 +16,8 @@ datasDir = './datas'
 pyautogui.PAUSE = 0.5
 # ! 动作执行间隔时间
 ACTION_PAUSE = 0.1
+# ! 在长时间动作中，结束动作运行
+stopKey = '`'
 
 # * 动作类型
 MOUSE_MOVETO = 'MOUSE_MOVETO'
@@ -163,13 +166,20 @@ def generateFunc(data: dict):
 
         def func():
             """延时"""
-            time.sleep(mtime)
+            t1 = time.time()
+            while time.time() < t1 + mtime:
+                if keyboard.is_pressed(stopKey):
+                    return False
+                time.sleep(1)
             return True
     elif actionType == ACTION_END:  # 结束动作
         if 'mtime' in data.keys():
             def func():
                 """结束动作"""
-                time.sleep(mtime)
+                while time.time() < t1 + mtime:
+                    if keyboard.is_pressed(stopKey):
+                        return False
+                    time.sleep(1)
                 return False
         else:
             def func():
@@ -205,7 +215,7 @@ def generateFunc(data: dict):
                 for box in boxes:
                     pyautogui.click(box.left + box.width / 2, box.top + box.height / 2, button=clickType)
                 return True
-    elif actionType == IMAGE_WAIT:
+    elif actionType == IMAGE_WAIT:      # 直到检测到图片后执行
         path = data['path']
         mtime = data.get('mtime', 1000)
 
@@ -214,10 +224,12 @@ def generateFunc(data: dict):
             while pyautogui.locateOnScreen(path) is None:
                 if time.time() > t1 + mtime:
                     return False
+                elif keyboard.is_pressed(stopKey):
+                    return False
                 else:
                     time.sleep(0.05)
             return True
-    elif actionType == IMAGE_SCREENSHOT:
+    elif actionType == IMAGE_SCREENSHOT:    # 截图
         path = data['path']
         if 'x' in data.keys() and 'y' in data.keys() and 'dx' in data.keys() and 'dy' in data.keys():
             x = data['x']
@@ -232,7 +244,7 @@ def generateFunc(data: dict):
             def func():
                 pyautogui.screenshot(path)
                 return True
-    elif actionType == IMAGE_WAIT_CLICK:
+    elif actionType == IMAGE_WAIT_CLICK:        # 检测到图片后点击
         path = data['path']
         mtime = data.get('mtime', 1000)
         clickType = data.get('clickType', 'left')
@@ -247,6 +259,8 @@ def generateFunc(data: dict):
                 while pyautogui.locateOnScreen(path, region=(x, y, dx, dy)) is None:
                     if time.time() > t1 + mtime:
                         return False
+                    elif keyboard.is_pressed(stopKey):
+                        return False
                     else:
                         time.sleep(0.05)
                 box = pyautogui.locateOnScreen(path)
@@ -257,6 +271,8 @@ def generateFunc(data: dict):
                 t1 = time.time()
                 while pyautogui.locateOnScreen(path) is None:
                     if time.time() > t1 + mtime:
+                        return False
+                    elif keyboard.is_pressed(stopKey):
                         return False
                     else:
                         time.sleep(0.05)
