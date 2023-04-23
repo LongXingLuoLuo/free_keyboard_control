@@ -358,6 +358,15 @@ class ActionGroup(object):
         self.explainList.pop(__index)
         logger.debug(self.TAG + f": pop {__index}.")
 
+    def swap(self, index1: int, index2: int):
+        if index1 == index2:
+            return
+        size = len(self)
+        if 0 <= index1 < size and 0 <= index2 < size:
+            self.dataList[index1], self.dataList[index2] = self.dataList[index2], self.dataList[index1]
+            self.funcList[index1], self.funcList[index2] = self.funcList[index2], self.funcList[index1]
+            self.explainList[index1], self.explainList[index2] = self.explainList[index2], self.explainList[index1]
+
     def __str__(self):
         return str(self.explainList)
 

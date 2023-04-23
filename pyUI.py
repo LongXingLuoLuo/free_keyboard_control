@@ -385,6 +385,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addActionBtn = QtWidgets.QPushButton(self.centralWidget)
         self.delActionBtn = QtWidgets.QPushButton(self.centralWidget)
         self.runActionBtn = QtWidgets.QPushButton(self.centralWidget)
+        self.upActionBtn = QtWidgets.QPushButton(self.centralWidget)
+        self.downActionBtn = QtWidgets.QPushButton(self.centralWidget)
         self.actionListView = QtWidgets.QListView(self.centralWidget)
         self.menubar = QtWidgets.QMenuBar(self)
         self.statusbar = QtWidgets.QStatusBar(self)
@@ -424,6 +426,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionHLayout.addWidget(self.delActionBtn)
         self.runActionBtn.setObjectName("runActionBtn")
         self.actionHLayout.addWidget(self.runActionBtn)
+        self.upActionBtn.setObjectName("upActionBtn")
+        self.actionHLayout.addWidget(self.upActionBtn)
+        self.downActionBtn.setObjectName("downActionBtn")
+        self.actionHLayout.addWidget(self.downActionBtn)
         self.actionVLayout.addLayout(self.actionHLayout)
         self.actionListView.setObjectName("actionListView")
         self.actionVLayout.addWidget(self.actionListView)
@@ -449,12 +455,32 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionListView.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.actionListView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 
+
+    def retranslateUi(self):
+        _translate = QtCore.QCoreApplication.translate
+        self.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.addActionBtn.setText(_translate("MainWindow", "插入动作"))
+        self.delActionBtn.setText(_translate("MainWindow", "移除动作"))
+        self.runActionBtn.setText(_translate("MainWindow", "运行动作组"))
+        self.upActionBtn.setText(_translate("MainWindow", "上移"))
+        self.downActionBtn.setText(_translate("MainWindow", "下移"))
+        self.aboutAction.setText(_translate("MainWindow", "关于"))
+        self.screenShotAction.setText(_translate("MainWindow", "截图"))
+
     @pyqtSlot()
     def on_aboutAction_triggered(self):
+        """
+        信息界面
+        :return:
+        """
         self.authorWidget.show()
 
     @pyqtSlot()
     def on_screenShotAction_triggered(self):
+        """
+        截图
+        :return:
+        """
         utils.screenShotByKey()
 
 
@@ -466,10 +492,10 @@ class MainWindow(QtWidgets.QMainWindow):
         :return:
         """
         menu = QtWidgets.QMenu()
-        addAction = menu.addAction("添加新动作组")
-        delAction = menu.addAction("删除选中动作组")
+        addActionGroupAction = menu.addAction("添加新动作组")
+        delActionGroupAction = menu.addAction("删除选中动作组")
         action = menu.exec_(self.actionGroupListView.mapToGlobal(pos))
-        if action == addAction:
+        if action == addActionGroupAction:
             dialog = ActionGroupNameDialog()
             self.hide()
             dialog.show()
@@ -478,19 +504,26 @@ class MainWindow(QtWidgets.QMainWindow):
                 name = dialog.getInput()
                 self.addNewActionGroup(name)
             self.show()
-        elif action == delAction:
-            self.delSelectedActionGroup()
+        elif action == delActionGroupAction:
+            name = self.getSelectedActionGroupName()
+            if name is None:
+                return
+            self.delActionGroup(name)
 
     @pyqtSlot(QModelIndex)
     def on_actionGroupListView_clicked(self):
         """
-        actionGroupListView 点击事件, 刷新 actionListView
+        刷新 actionListView
         :return:
         """
         self.upgradeActionListView()
 
     @pyqtSlot()
     def on_addActionBtn_clicked(self):
+        """
+        添加新动作
+        :return:
+        """
         if self.getSelectedActionGroupName() is None:
             return
         dialog = ActionDialog()
@@ -504,18 +537,55 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_delActionBtn_clicked(self):
-        self.delSelectedAction()
+        """
+        删除选中动作
+        :return:
+        """
+        index = self.getSelectedActionRow()
+        if index == -1:
+            return
+        self.delAction(index)
 
     @pyqtSlot()
     def on_runActionBtn_clicked(self):
+        """
+        运行动作组
+        :return:
+        """
         name = self.getSelectedActionGroupName()
         if name is None:
             return
         self.showMinimized()
         self.runActionBtn.setEnabled(False)
-        self.runSelectedActionGroup()
+        self.runSelectedActionGroup(self.getSelectedActionGroupName())
         self.runActionBtn.setEnabled(True)
         self.showNormal()
+
+    @pyqtSlot()
+    def on_upActionBtn_clicked(self):
+        """
+        上移选中动作
+        :return:
+        """
+        row = self.getSelectedActionRow()
+        if row == 0 or row == -1:
+            return
+        else:
+            self.swapAction(row, row - 1)
+            self.actionListView.setCurrentIndex(self.actionListModel.index(row - 1))
+
+
+    def on_downActionBtn_clicked(self):
+        """
+        下移选中动作
+        :return:
+        """
+        row = self.getSelectedActionRow()
+        if row >= self.actionListModel.rowCount() - 1 or row <= -1:
+            return
+        else:
+            self.swapAction(row, row + 1)
+            self.actionListView.setCurrentIndex(self.actionListModel.index(row + 1))
 
     def getSelectedActionGroupName(self) -> None | str:
         """
@@ -537,7 +607,7 @@ class MainWindow(QtWidgets.QMainWindow):
             index = self.actionListView.selectedIndexes()[0]
             return index.row()
         else:
-            return self.actionListModel.rowCount() - 1
+            return - 1
 
     def upgradeActionListView(self):
         """
@@ -573,71 +643,89 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionGroupListModel.insertRow(row)
         self.actionGroupListModel.setData(self.actionGroupListModel.index(row), name)
 
-    def delSelectedActionGroup(self):
+    def delActionGroup(self, name: str | None):
         """
-        删除选中行
+        删除名称为 name 的动作组
+
         :return:
         """
-        if len(self.actionGroupListView.selectedIndexes()) == 0:
+        if name is None:
             return
-        index = self.actionGroupListView.selectedIndexes()[0]
-        name = index.data()
+
+        # 数据部分
+        self.actionGroupDict[name].deleteFile()
+        self.actionGroupDict.pop(name)
 
         # ui 部分
         self.actionGroupListView.clearSelection()
         self.actionGroupListModel.removeRow(index.row())
         self.actionListModel.setStringList([])
 
-        # 数据部分
-        self.actionGroupDict[name].deleteFile()
-        self.actionGroupDict.pop(name)
 
-    def addNewAction(self, action: dict):
-        name = self.getSelectedActionGroupName()
-        if name is None:
-            return
-        row = self.getSelectedActionRow() + 1
-
-        # 数据部分
-        self.actionGroupDict[name].insert(row, action)
-        self.actionGroupDict[name].save()
-
-        # ui 部分
-        self.upgradeActionListView()
-
-    def delSelectedAction(self):
-        name = self.getSelectedActionGroupName()
-        if name is None:
-            return
-        row = self.getSelectedActionRow()
-        if row == -1:
-            return
-        # 数据部分
-        self.actionGroupDict[name].pop(row)
-        self.actionGroupDict[name].save()
-
-        # ui 部分
-        self.upgradeActionListView()
-
-    def runSelectedActionGroup(self):
+    def addNewAction(self, data: dict):
         """
-        运行选中动作组
+        在末尾添加新动作
+        :param data: 动作data
         :return:
         """
         name = self.getSelectedActionGroupName()
         if name is None:
             return
+        row = self.actionListModel.rowCount()
+
+        # 数据部分
+        self.actionGroupDict[name].insert(row, data)
+        self.actionGroupDict[name].save()
+
+        # ui 部分
+        self.upgradeActionListView()
+
+    def delAction(self, index: int):
+        """
+        删除动作
+        :param index 需要删除的动作的下标
+        :return:
+        """
+        name = self.getSelectedActionGroupName()
+        if name is None:
+            return
+
+        # 数据部分
+        self.actionGroupDict[name].pop(index)
+        self.actionGroupDict[name].save()
+
+        # ui 部分
+        self.upgradeActionListView()
+
+    def swapAction(self, index1: int, index2: int):
+        """
+        交换 index1, index2 处动作
+        :param index1: 下标1
+        :param index2: 下表2
+        :return:
+        """
+        name = self.getSelectedActionGroupName()
+        if name is None:
+            return
+
+        # 数据部分
+        self.actionGroupDict[name].swap(index1, index2)
+        self.actionGroupDict[name].save()
+
+        # ui 部分
+        self.upgradeActionListView()
+
+    def runSelectedActionGroup(self, name: str | None):
+        """
+        运行选中动作组
+        :param name 动作组名称
+        :return:
+        """
+        if name is None:
+            return
         else:
             self.actionGroupDict[name].run()
 
-    def retranslateUi(self):
-        _translate = QtCore.QCoreApplication.translate
-        self.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.addActionBtn.setText(_translate("MainWindow", "插入动作"))
-        self.delActionBtn.setText(_translate("MainWindow", "移除动作"))
-        self.runActionBtn.setText(_translate("MainWindow", "运行动作组"))
-        self.aboutAction.setText(_translate("MainWindow", "关于"))
-        self.screenShotAction.setText(_translate("MainWindow", "截图"))
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         logger.debug(self.TAG + ": is closed.")
