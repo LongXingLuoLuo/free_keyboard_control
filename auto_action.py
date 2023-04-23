@@ -6,8 +6,9 @@ import time
 import pyautogui
 import pyperclip
 
-from utils import getAllFiles
 from log_config import logger
+from utils import getAllFiles
+
 # 动作组数据的保存文件夹
 datasDir = './datas'
 # ! pyautogui 函数执行间隔
@@ -283,7 +284,8 @@ class ActionGroup(object):
         :return: 是否运行成功
         """
         logger.info(self.TAG + ": running...")
-        for func in self.funcList:
+        for i, func in enumerate(self.funcList):
+            logger.debug(self.TAG + f": run {self.dataList[i]}.")
             if not func():
                 logger.info(self.TAG + ": run end.")
                 return False
