@@ -1,7 +1,5 @@
 # -*- coding:UTF-8 -*-
-from threading import Thread
 
-import pynput.keyboard
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import pyqtSlot, QPoint, QModelIndex
 
@@ -12,16 +10,14 @@ from log_config import logger
 class AuthorWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(AuthorWidget, self).__init__(parent)
-        self.verticalLayout = None
-        self.textBrowser = None
+        self.verticalLayout = QtWidgets.QVBoxLayout(self)
+        self.textBrowser = QtWidgets.QTextBrowser(self)
         self.setupUi()
 
     def setupUi(self):
         self.setObjectName("authorWidget")
         self.resize(534, 419)
-        self.verticalLayout = QtWidgets.QVBoxLayout(self)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.textBrowser = QtWidgets.QTextBrowser(self)
         self.textBrowser.setObjectName("textBrowser")
         self.verticalLayout.addWidget(self.textBrowser)
 
@@ -44,6 +40,49 @@ class AuthorWidget(QtWidgets.QWidget):
                                             "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><a href=\"https://github.com/LongXingLuoLuo/free_keyboard_control\"><span style=\" text-decoration: underline; color:#0000ff;\">https://github.com/LongXingLuoLuo/free_keyboard_control</span></a></p>\n"
                                             "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">（若该链接进不去，则说明作者本人未公开此仓库。）</p>\n"
                                             "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"> </p></body></html>"))
+
+
+class ActionGroupNameDialog(QtWidgets.QDialog):
+
+    def __init__(self, parent: QtWidgets.QMainWindow = None):
+        super(ActionGroupNameDialog, self).__init__(parent)
+        self.verticalLayout = QtWidgets.QVBoxLayout(self)
+        self.label = QtWidgets.QLabel(self)
+        self.lineEdit = QtWidgets.QLineEdit(self)
+        self.buttonBox = QtWidgets.QDialogButtonBox(self)
+        self.setupUi()
+
+    def setupUi(self):
+        self.setObjectName("ActionGroupNameDialog")
+        self.resize(387, 117)
+        self.verticalLayout.setObjectName("verticalLayout")
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.label.setFont(font)
+        self.label.setObjectName("label")
+        self.verticalLayout.addWidget(self.label)
+        font = QtGui.QFont()
+        font.setPointSize(15)
+        self.lineEdit.setFont(font)
+        self.lineEdit.setObjectName("lineEdit")
+        self.verticalLayout.addWidget(self.lineEdit)
+        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setObjectName("buttonBox")
+        self.verticalLayout.addWidget(self.buttonBox)
+        self.retranslateUi()
+        self.buttonBox.accepted.connect(self.accept)  # type: ignore
+        self.buttonBox.rejected.connect(self.reject)  # type: ignore
+        QtCore.QMetaObject.connectSlotsByName(self)
+
+    def retranslateUi(self):
+        _translate = QtCore.QCoreApplication.translate
+        self.setWindowTitle(_translate("ActionGroupNameDialog", "新动作组名字"))
+        self.label.setText(_translate("ActionGroupNameDialog", "输入要添加的新动作组名字："))
+
+
+    def getInput(self) -> str:
+        return self.lineEdit.text().strip()
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -81,6 +120,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionListModel = QtCore.QStringListModel()
         self.actionListModel.setStringList([])
         self.actionListView.setModel(self.actionListModel)
+        self.setupUi()
 
     def setupUi(self):
         self.setObjectName("MainWindow")
@@ -127,7 +167,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_authorAction_triggered(self):
         self.authorWidget.show()
 
-
     @pyqtSlot(QPoint)
     def on_actionGroupListView_customContextMenuRequested(self, pos):
         """
@@ -140,7 +179,14 @@ class MainWindow(QtWidgets.QMainWindow):
         delAction = menu.addAction("删除选中动作组")
         action = menu.exec_(self.actionGroupListView.mapToGlobal(pos))
         if action == addAction:
-            self.addNewActionGroup()
+            dialog = ActionGroupNameDialog()
+            self.hide()
+            dialog.show()
+            res = dialog.exec()
+            if res == QtWidgets.QDialog.Accepted:
+                name = dialog.getInput()
+                self.addNewActionGroup(name)
+            self.show()
         elif action == delAction:
             self.delSelectedActionGroup()
 
@@ -206,21 +252,22 @@ class MainWindow(QtWidgets.QMainWindow):
             actionGroup = self.actionGroupDict[name]
             self.actionListModel.setStringList(actionGroup.typeList())
 
-    def addNewActionGroup(self):
+    def addNewActionGroup(self, name: str):
         """
         添加动作组
+        :param name 新动作组名字
         :return:
         """
-        name = 'three'
-        i = 1
+        if name in self.actionGroupDict.keys():
+            i = 0
+            while name + f"({i})" in self.actionGroupDict.keys():
+                i += 1
+            name = name + f"({i})"
         row = self.actionGroupListModel.rowCount()
-        while name + f"({i})" in self.actionGroupDict.keys():
-            i += 1
-        name = name + f"({i})"
-        actonGroup = auto_action.ActionGroup(name=name)
-        self.actionGroupDict[name] = actonGroup
 
         # 数据部分
+        actonGroup = auto_action.ActionGroup(name=name)
+        self.actionGroupDict[name] = actonGroup
         self.actionGroupDict[name].save()
 
         # ui 部分
@@ -284,7 +331,6 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         else:
             self.actionGroupDict[name].run()
-
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
