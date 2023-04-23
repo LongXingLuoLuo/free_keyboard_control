@@ -1,10 +1,49 @@
 # -*- coding:UTF-8 -*-
+from threading import Thread
 
+import pynput.keyboard
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import pyqtSlot, QPoint, QModelIndex
 
 import auto_action
 from log_config import logger
+
+
+class AuthorWidget(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super(AuthorWidget, self).__init__(parent)
+        self.verticalLayout = None
+        self.textBrowser = None
+        self.setupUi()
+
+    def setupUi(self):
+        self.setObjectName("authorWidget")
+        self.resize(534, 419)
+        self.verticalLayout = QtWidgets.QVBoxLayout(self)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.textBrowser = QtWidgets.QTextBrowser(self)
+        self.textBrowser.setObjectName("textBrowser")
+        self.verticalLayout.addWidget(self.textBrowser)
+
+        self.retranslateUi()
+        QtCore.QMetaObject.connectSlotsByName(self)
+
+    def retranslateUi(self):
+        _translate = QtCore.QCoreApplication.translate
+        self.setWindowTitle(_translate("authorWidget", "作者介绍"))
+        self.textBrowser.setHtml(_translate("authorWidget",
+                                            "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+                                            "<html><head><meta name=\"qrichtext\" content=\"1\" /><title>作者介绍</title><style type=\"text/css\">\n"
+                                            "p, li { white-space: pre-wrap; }\n"
+                                            "</style></head><body style=\" font-family:\'SimSun\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
+                                            "<h2 style=\" margin-top:16px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><a name=\"软件介绍\"></a><span style=\" font-size:x-large; font-weight:600;\">软</span><span style=\" font-size:x-large; font-weight:600;\">件介绍</span></h2>\n"
+                                            "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-weight:600;\">该软件是用来可视化自定义键鼠控制，实现自动化操作。</span></p>\n"
+                                            "<h2 style=\" margin-top:16px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><a name=\"作者个人网站\"></a><span style=\" font-size:x-large; font-weight:600;\">作</span><span style=\" font-size:x-large; font-weight:600;\">者个人网站</span></h2>\n"
+                                            "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><a href=\"https://github.com/LongXingLuoLuo\"><span style=\" text-decoration: underline; color:#0000ff;\">https://github.com/LongXingLuoLuo</span></a></p>\n"
+                                            "<h2 style=\" margin-top:16px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:x-large; font-weight:600;\">软件 github 仓库</span></h2>\n"
+                                            "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><a href=\"https://github.com/LongXingLuoLuo/free_keyboard_control\"><span style=\" text-decoration: underline; color:#0000ff;\">https://github.com/LongXingLuoLuo/free_keyboard_control</span></a></p>\n"
+                                            "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">（若该链接进不去，则说明作者本人未公开此仓库。）</p>\n"
+                                            "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"> </p></body></html>"))
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -26,11 +65,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusbar = QtWidgets.QStatusBar(self)
         self.authorAction = QtWidgets.QAction(self)
         self.addActionGroupAction = QtWidgets.QAction(self)
+        self.authorWidget = AuthorWidget()
+        self.authorWidget.hide()
 
         # 数据变量
         if actionGroupDict is None:
             actionGroupDict = {}
         self.actionGroupDict = actionGroupDict
+        self.isRunning = False
 
         self.actionGroupListModel = QtCore.QStringListModel()
         self.actionGroupListModel.setStringList(self.actionGroupDict.keys())
@@ -81,6 +123,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionListView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.actionListView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
+    @pyqtSlot()
+    def on_authorAction_triggered(self):
+        self.authorWidget.show()
+
+
     @pyqtSlot(QPoint)
     def on_actionGroupListView_customContextMenuRequested(self, pos):
         """
@@ -116,10 +163,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_runActionBtn_clicked(self):
-        self.hide()
+        name = self.getSelectedActionGroupName()
+        if name is None:
+            return
+        self.showMinimized()
+        self.runActionBtn.setEnabled(False)
         self.runSelectedActionGroup()
-        self.show()
-
+        self.runActionBtn.setEnabled(True)
+        self.showNormal()
 
     def getSelectedActionGroupName(self) -> None | str:
         """
@@ -143,8 +194,6 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             return -1
 
-
-
     def upgradeActionListView(self):
         """
         更新 actionListView 内容
@@ -156,7 +205,6 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             actionGroup = self.actionGroupDict[name]
             self.actionListModel.setStringList(actionGroup.typeList())
-
 
     def addNewActionGroup(self):
         """
@@ -178,8 +226,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # ui 部分
         self.actionGroupListModel.insertRow(row)
         self.actionGroupListModel.setData(self.actionGroupListModel.index(row), name)
-
-
 
     def delSelectedActionGroup(self):
         """
@@ -214,7 +260,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # ui 部分
         self.upgradeActionListView()
 
-
     def delSelectedAction(self):
         name = self.getSelectedActionGroupName()
         if name is None:
@@ -240,10 +285,11 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.actionGroupDict[name].run()
 
+
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
         self.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.addActionBtn.setText(_translate("MainWindow", "添加动作"))
+        self.addActionBtn.setText(_translate("MainWindow", "插入动作"))
         self.delActionBtn.setText(_translate("MainWindow", "移除动作"))
         self.runActionBtn.setText(_translate("MainWindow", "运行动作组"))
         self.aboutMenu.setTitle(_translate("MainWindow", "关于"))
