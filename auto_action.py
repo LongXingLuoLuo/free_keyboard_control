@@ -2,7 +2,7 @@
 import json
 import os
 import time
-
+from pynput import keyboard
 import pyautogui
 import pyperclip
 
@@ -283,7 +283,8 @@ class ActionGroup(object):
         :return: 是否运行成功
         """
         logger.info(self.TAG + ": running...")
-        for func in self.funcList:
+        for i, func in enumerate(self.funcList):
+            logger.debug(self.TAG + f": run {self.dataList[i]}.")
             if not func():
                 logger.info(self.TAG + ": run end.")
                 return False
