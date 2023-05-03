@@ -155,9 +155,10 @@ def generateFunc(data: dict):
 
         def func():
             """复制区域内的字符串"""
-            pyautogui.click(x, y)
-            pyautogui.dragRel(dx, dy)
+            pyautogui.mouseDown(x, y, button='left')
+            pyautogui.moveRel(dx, dy)
             pyautogui.hotkey('ctrl', 'c')
+            pyautogui.mouseUp(x, y, button='left')
             return True
 
         explain = f"复制({x}, {y}, {dx}, {dy})区域内的字符串"
