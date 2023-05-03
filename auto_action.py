@@ -71,10 +71,10 @@ clickTypeName = {
 }
 
 
-def generateFunc(data: dict):
+def generateFuncAndExplain(data: dict):
     """
-    生成动作函数
-    :param data:
+    生成动作函数和解释
+    :param data: 动作数据
     :return:
     """
     actionType = data['actionType']
@@ -212,13 +212,15 @@ def generateFunc(data: dict):
                 print(box)
             return True
 
-        explain = f"检测{region}区域内点击({clickType}) {path}"
+        explain = f"检测{region}区域内点击({clickType}) {os.path.basename(path)}"
     elif actionType == IMAGE_WAIT:  # 直到检测到图片后执行
         path = data['path']
         mtime = data.get('mtime', 1000)
 
         def func():
             t1 = time.time()
+            if not os.path.exists(path):
+                return False
             while pyautogui.locateOnScreen(path) is None:
                 if time.time() > t1 + mtime:
                     return False
@@ -228,7 +230,7 @@ def generateFunc(data: dict):
                     time.sleep(0.05)
             return True
 
-        explain = f"在 {mtime}s 内检测是否有 {path}"
+        explain = f"在 {mtime}s 内检测是否有 {os.path.basename(path)}"
     elif actionType == IMAGE_SCREENSHOT:  # 截图
         path = data['path']
         region = data['region']
@@ -237,7 +239,7 @@ def generateFunc(data: dict):
             pyautogui.screenshot(path, region=region)
             return True
 
-        explain = f"在{region}区域内截图，保存为 {path}"
+        explain = f"在{region}区域内截图，保存为 {os.path.basename(path)}"
     elif actionType == IMAGE_MOVE:  # 鼠标移动到指定图片位置
         path = data['path']
 
@@ -266,12 +268,11 @@ class ActionGroup(object):
         self.dataList = dataList
         for data in self.dataList:
             try:
-                func, explain = generateFunc(data)
+                func, explain = generateFuncAndExplain(data)
                 self.funcList.append(func)
                 self.explainList.append(explain)
             except KeyError:
                 logger.error(f"{self.TAG}: KeyError in dataList({dataList})")
-
 
     def run(self):
         """
@@ -298,7 +299,7 @@ class ActionGroup(object):
         :return:
         """
         self.dataList.append(__data)
-        func, explain = generateFunc(__data)
+        func, explain = generateFuncAndExplain(__data)
         self.funcList.append(func)
         self.explainList.append(explain)
         logger.debug(self.TAG + f": append {__data}.")
@@ -311,7 +312,7 @@ class ActionGroup(object):
         :return:
         """
         self.dataList.insert(__index, __data)
-        func, explain = generateFunc(__data)
+        func, explain = generateFuncAndExplain(__data)
         self.funcList.insert(__index, func)
         self.explainList.insert(__index, explain)
         logger.debug(self.TAG + f": insert ({__index}) {__data}.")
@@ -409,7 +410,7 @@ def generateAction(actionType: str, **kwargs) -> None | dict[str, str | int]:
     IMAGE_MOUSE_CLICK: path, clickType, region\n
     IMAGE_WAIT: path, mtime\n
     IMAGE_SCREENSHOT: path, region, mtime\n
-    IMAGE_MOVE path, region, mtime\n
+    IMAGE_MOVE path, region\n
     :param actionType: 动作类型
     :param kwargs: 动作的参数
     :return: 包含所有参数的字典
