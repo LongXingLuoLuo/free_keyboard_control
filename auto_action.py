@@ -34,7 +34,7 @@ COMMAND_RUN = 'COMMAND_RUN'
 IMAGE_MOUSE_CLICK = 'IMAGE_MOUSE_CLICK'
 IMAGE_WAIT = 'IMAGE_WAIT'
 IMAGE_SCREENSHOT = 'IMAGE_SCREENSHOT'
-IMAGE_WAIT_CLICK = 'IMAGE_WAIT_CLICK'
+IMAGE_MOVE = 'IMAGE_MOVE'
 
 
 class ActionKeyLackException(Exception):
@@ -61,7 +61,7 @@ actionTypeName = {
     IMAGE_MOUSE_CLICK: '点击屏幕上所有指定图片',
     IMAGE_WAIT: '等待直到屏幕上出现指定图片',
     IMAGE_SCREENSHOT: '截图',
-    IMAGE_WAIT_CLICK: '屏幕上出现指定图片后点击一次',
+    IMAGE_MOVE: '鼠标移动到指定图片位置',
 }
 
 clickTypeName = {
@@ -83,6 +83,7 @@ def generateFunc(data: dict):
         """默认函数"""
         return False
 
+    explain = ""
     if actionType == MOUSE_MOVETO:  # 鼠标指定移动
         x, y = data['pos']
 
@@ -90,6 +91,8 @@ def generateFunc(data: dict):
             """鼠标指定移动"""
             pyautogui.moveTo(x, y)
             return True
+
+        explain = f"鼠标移动到({x}, {y})"
     elif actionType == MOUSE_MOVEREL:  # 鼠标偏移移动
         x, y = data['pos']
 
@@ -97,6 +100,8 @@ def generateFunc(data: dict):
             """鼠标偏移移动"""
             pyautogui.moveRel(x, y)
             return True
+
+        explain = f"鼠标偏移移动({x}, {y})"
     elif actionType == MOUSE_CLICK:  # 鼠标点击
         clickType = data.get('clickType', 'left')
         x, y = data['pos']
@@ -105,6 +110,8 @@ def generateFunc(data: dict):
             """鼠标点击"""
             pyautogui.click(button=clickType, x=x, y=y)
             return True
+
+        explain = f"在({x}, {y})鼠标点击({clickType})"
     elif actionType == MOUSE_DRAGTO:  # 鼠标指定拖动
         x, y = data['pos']
 
@@ -112,6 +119,8 @@ def generateFunc(data: dict):
             """鼠标指定拖动"""
             pyautogui.dragTo(x, y)
             return True
+
+        explain = f"鼠标拖动到({x}, {y})"
     elif actionType == MOUSE_DRAGREL:  # 鼠标偏移拖动
         x, y = data['pos']
 
@@ -119,6 +128,8 @@ def generateFunc(data: dict):
             """鼠标偏移拖动"""
             pyautogui.dragRel(x, y)
             return True
+
+        explain = f"鼠标偏移拖动({x}, {y})"
     elif actionType == KEYBOARD_KEY:  # 键盘快捷键
         key = data['key']
 
@@ -126,16 +137,19 @@ def generateFunc(data: dict):
             """键盘快捷键"""
             pyautogui.hotkey(*key)
             return True
+
+        explain = f"模拟按下({'+'.join(key)})"
     elif actionType == KEYBOARD_INPUT:  # 键盘输入字符串
         inputStr = data['inputStr']
-        x, y = data['pos']
 
         def func():
             """键盘输入字符串"""
-            pyautogui.click(x, y)
+            pyautogui.click()
             pyperclip.copy(inputStr)
             pyautogui.hotkey('ctrl', 'v')
             return True
+
+        explain = f"输入字符串{inputStr}"
     elif actionType == KEYBOARD_COPY:  # 复制区域内的字符串
         x, y, dx, dy = data['region']
 
@@ -145,6 +159,8 @@ def generateFunc(data: dict):
             pyautogui.dragRel(dx, dy)
             pyautogui.hotkey('ctrl', 'c')
             return True
+
+        explain = f"复制({x}, {y}, {dx}, {dy})区域内的字符串"
     elif actionType == TIME_DELAY:  # 延时
         mtime = data['mtime']
 
@@ -156,6 +172,8 @@ def generateFunc(data: dict):
                     return False
                 time.sleep(1)
             return True
+
+        explain = f"延时 {mtime}s"
     elif actionType == ACTION_END:  # 结束动作
         mtime = data['mtime']
 
@@ -167,6 +185,8 @@ def generateFunc(data: dict):
                     return False
                 time.sleep(1)
             return False
+
+        explain = f"{mtime}s 后结束"
     elif actionType == COMMAND_RUN:  # 运行命令
         inputStr = data['inputStr']
 
@@ -174,18 +194,24 @@ def generateFunc(data: dict):
             """运行命令"""
             os.system(inputStr)
             return True
+
+        explain = f"运行 {inputStr}"
     elif actionType == IMAGE_MOUSE_CLICK:  # 检测到图片后点击
         path = data['path']
         clickType = data['clickType']
-        x, y, dx, dy = data['region']
+        region = data['region']
 
         def func():
             """检测到图片后点击"""
-            boxes = pyautogui.locateAllOnScreen(path)
+            if not os.path.exists(path):
+                return False
+            boxes = pyautogui.locateAllOnScreen(path, region=region)
             for box in boxes:
-                pyautogui.click(box.left + box.width / 2, box.top + box.height / 2, button=clickType,
-                                region=(x, y, dx, dy))
+                pyautogui.click(box.left + box.width / 2, box.top + box.height / 2, button=clickType)
+                print(box)
             return True
+
+        explain = f"检测{region}区域内点击({clickType}) {path}"
     elif actionType == IMAGE_WAIT:  # 直到检测到图片后执行
         path = data['path']
         mtime = data.get('mtime', 1000)
@@ -200,100 +226,29 @@ def generateFunc(data: dict):
                 else:
                     time.sleep(0.05)
             return True
+
+        explain = f"在 {mtime}s 内检测是否有 {path}"
     elif actionType == IMAGE_SCREENSHOT:  # 截图
         path = data['path']
-        x, y, dx, dy = data['region']
+        region = data['region']
 
         def func():
-            pyautogui.screenshot(path, region=(x, y, dx, dy))
+            pyautogui.screenshot(path, region=region)
             return True
-    elif actionType == IMAGE_WAIT_CLICK:  # 检测到图片后点击
+
+        explain = f"在{region}区域内截图，保存为 {path}"
+    elif actionType == IMAGE_MOVE:  # 鼠标移动到指定图片位置
         path = data['path']
-        mtime = data.get('mtime', 1000)
-        clickType = data['clickType']
-        region = data.get('region', (0, 0, 1920, 1080))
 
         def func():
-            t1 = time.time()
-            while pyautogui.locateOnScreen(path, region=region) is None:
-                if time.time() > t1 + mtime:
-                    return False
-                elif keyboard.is_pressed(stopKey):
-                    return False
-                else:
-                    time.sleep(0.05)
             box = pyautogui.locateOnScreen(path)
-            pyautogui.click(box.left + box.width / 2, box.top + box.height / 2, button=clickType)
+            if box is None:
+                return False
+            pyautogui.moveTo(box.left + box.width / 2, box.top + box.height / 2)
             return True
-    return func
 
-
-def generateExplain(data: dict[str, str]) -> str:
-    """
-    获取动作的简要解释
-    :param data: 动作
-    :return: 动作的简要解释
-    """
-    actionType = data['actionType']
-    if actionType == MOUSE_MOVETO:  # 鼠标指定移动
-        x, y = data['pos']
-        return f"鼠标移动到({x}, {y})"
-    elif actionType == MOUSE_MOVEREL:  # 鼠标偏移移动
-        x, y = data['pos']
-        return f"鼠标偏移移动({x}, {y})"
-    elif actionType == MOUSE_CLICK:  # 鼠标点击
-        clickType = data.get('clickType', 'left')
-        x, y = data['pos']
-        return f"在({x}, {y})鼠标点击({clickType})"
-    elif actionType == MOUSE_DRAGTO:  # 鼠标指定拖动
-        x, y = data['pos']
-        return f"鼠标拖动到({x}, {y})"
-    elif actionType == MOUSE_DRAGREL:  # 鼠标偏移拖动
-        x, y = data['pos']
-        return f"鼠标偏移拖动({x}, {y})"
-    elif actionType == KEYBOARD_KEY:  # 键盘快捷键
-        key = data['key']
-        return f"模拟按下({'+'.join(key)})"
-    elif actionType == KEYBOARD_INPUT:  # 键盘输入字符串
-        inputStr = data['inputStr']
-        x, y = data['pos']
-        return f"在({x}, {y})输入字符串{inputStr}"
-    elif actionType == KEYBOARD_COPY:  # 复制区域内的字符串
-        x, y, dx, dy = data['region']
-        return f"复制({x}, {y}, {dx}, {dy})区域内的字符串"
-    elif actionType == TIME_DELAY:  # 延时
-        mtime = data['mtime']
-        return f"延时 {mtime}s"
-    elif actionType == ACTION_END:  # 结束动作
-        mtime = data['mtime']
-        return f"{mtime}s 后结束"
-    elif actionType == COMMAND_RUN:  # 运行命令
-        inputStr = data['inputStr']
-        return f"运行 {inputStr}"
-    elif actionType == IMAGE_MOUSE_CLICK:  # 检测到图片后点击
-        path = data['path']
-        path = os.path.basename(path)
-        clickType = data['clickType']
-        x, y, dx, dy = data['region']
-        return f"检测({x}, {y}, {dx}, {dy})区域内点击({clickType}) {path}"
-    elif actionType == IMAGE_WAIT:  # 直到检测到图片后执行
-        path = data['path']
-        path = os.path.basename(path)
-        mtime = data.get('mtime', 1000)
-        return f"在 {mtime}s 内检测是否有 {path}"
-    elif actionType == IMAGE_SCREENSHOT:  # 截图
-        path = data['path']
-        path = os.path.basename(path)
-        x, y, dx, dy = data['region']
-        return f"在({x}, {y}, {dx}, {dy})区域内截图，保存为 {path}"
-    elif actionType == IMAGE_WAIT_CLICK:  # 检测到图片后点击
-        path = data['path']
-        path = os.path.basename(path)
-        mtime = data.get('mtime', 1000)
-        clickType = data['clickType']
-        x, y, dx, dy = data.get('region', (0, 0, 1920, 1080))
-        return f"在 {mtime}s 内检测({x}, {y}, {dx}, {dy})区域内检测到 {path} 后点击图片({clickType})"
-    return ''
+        explain = f"鼠标移动到 {os.path.basename(path)}"
+    return func, explain
 
 
 class ActionGroup(object):
@@ -303,11 +258,19 @@ class ActionGroup(object):
         super().__init__()
         if dataList is None:
             dataList = []
-        self.dataList = dataList
         self.name = name
-        self.funcList = [generateFunc(data) for data in self.dataList]
-        self.explainList = [generateExplain(data) for data in self.dataList]
         self.TAG = f"ActionGroup[{self.name}]"
+        self.funcList = []
+        self.explainList = []
+        self.dataList = dataList
+        for data in self.dataList:
+            try:
+                func, explain = generateFunc(data)
+                self.funcList.append(func)
+                self.explainList.append(explain)
+            except KeyError:
+                logger.error(f"{self.TAG}: KeyError in dataList({dataList})")
+
 
     def run(self):
         """
@@ -315,12 +278,15 @@ class ActionGroup(object):
         :return: 是否运行成功
         """
         logger.info(self.TAG + ": running...")
-        for i, func in enumerate(self.funcList):
-            logger.debug(self.TAG + f": run {self.dataList[i]}.")
-            if not func():
-                logger.info(self.TAG + ": run end.")
-                return False
-            time.sleep(ACTION_PAUSE)
+        try:
+            for i, func in enumerate(self.funcList):
+                logger.debug(self.TAG + f": run {self.dataList[i]}.")
+                if not func():
+                    logger.info(self.TAG + ": run end.")
+                    return False
+                time.sleep(ACTION_PAUSE)
+        except OSError:
+            logger.error(self.TAG + ": run error.")
         logger.info(self.TAG + ": run end.")
         return True
 
@@ -331,8 +297,9 @@ class ActionGroup(object):
         :return:
         """
         self.dataList.append(__data)
-        self.funcList.append(generateFunc(__data))
-        self.explainList.append(generateExplain(__data))
+        func, explain = generateFunc(__data)
+        self.funcList.append(func)
+        self.explainList.append(explain)
         logger.debug(self.TAG + f": append {__data}.")
 
     def insert(self, __index: int, __data: dict[str, str | int]):
@@ -343,8 +310,9 @@ class ActionGroup(object):
         :return:
         """
         self.dataList.insert(__index, __data)
-        self.funcList.insert(__index, generateFunc(__data))
-        self.explainList.insert(__index, generateExplain(__data))
+        func, explain = generateFunc(__data)
+        self.funcList.insert(__index, func)
+        self.explainList.insert(__index, explain)
         logger.debug(self.TAG + f": insert ({__index}) {__data}.")
 
     def pop(self, __index: int):
@@ -428,19 +396,19 @@ def generateAction(actionType: str, **kwargs) -> None | dict[str, str | int]:
     根据参数生成字典
     MOUSE_MOVETO: pos\n
     MOUSE_MOVEREL: pos\n
-    MOUSE_CLICK: (pos, clickType)\n
+    MOUSE_CLICK: pos, clickType\n
     MOUSE_DRAGTO: pos\n
     MOUSE_DRAGREL: pos\n
     KEYBOARD_KEY: key:[]\n
-    KEYBOARD_INPUT: inputStr, (pos)\n
+    KEYBOARD_INPUT: inputStr\n
     KEYBOARD_COPY: region\n
     TIME_DELAY: mtime\n
     ACTION_END: mtime\n
     COMMAND_RUN: inputStr\n
-    IMAGE_MOUSE_CLICK: path, (clickType, region)\n
+    IMAGE_MOUSE_CLICK: path, clickType, region\n
     IMAGE_WAIT: path, mtime\n
-    IMAGE_SCREENSHOT: path, (region, mtime)\n
-    IMAGE_WAIT_CLICK: path, (region, mtime)\n
+    IMAGE_SCREENSHOT: path, region, mtime\n
+    IMAGE_MOVE path, region, mtime\n
     :param actionType: 动作类型
     :param kwargs: 动作的参数
     :return: 包含所有参数的字典

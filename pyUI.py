@@ -1,7 +1,9 @@
 # -*- coding:UTF-8 -*-
+import json
 import os.path
 import re
 
+import pyperclip
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import pyqtSlot, QPoint, QModelIndex
 
@@ -229,7 +231,7 @@ class ActionDialog(QtWidgets.QDialog):
         """
         actionType = self.actionTypeComboBox.currentData()
         if actionType in [auto_action.MOUSE_MOVETO, auto_action.MOUSE_MOVEREL, auto_action.MOUSE_CLICK,
-                          auto_action.MOUSE_DRAGTO, auto_action.MOUSE_DRAGREL, auto_action.KEYBOARD_INPUT]:
+                          auto_action.MOUSE_DRAGTO, auto_action.MOUSE_DRAGREL]:
             self.posBtn.show()
             self.posLineEdit.show()
             self.posLabel.show()
@@ -237,8 +239,7 @@ class ActionDialog(QtWidgets.QDialog):
             self.posBtn.hide()
             self.posLineEdit.hide()
             self.posLabel.hide()
-        if actionType in [auto_action.KEYBOARD_COPY, auto_action.IMAGE_MOUSE_CLICK, auto_action.IMAGE_SCREENSHOT,
-                          auto_action.IMAGE_WAIT_CLICK]:
+        if actionType in [auto_action.KEYBOARD_COPY, auto_action.IMAGE_MOUSE_CLICK, auto_action.IMAGE_SCREENSHOT]:
             self.regionBtn.show()
             self.regionLabel.show()
             self.regionLineEdit.show()
@@ -265,14 +266,14 @@ class ActionDialog(QtWidgets.QDialog):
             self.inputStrLabel.hide()
             self.inputStrLineEdit.hide()
         if actionType in [auto_action.TIME_DELAY, auto_action.ACTION_END, auto_action.IMAGE_WAIT,
-                          auto_action.IMAGE_SCREENSHOT, auto_action.IMAGE_WAIT_CLICK]:
+                          auto_action.IMAGE_SCREENSHOT]:
             self.mtimeLabel.show()
             self.mtimeDoubleSpinBox.show()
         else:
             self.mtimeLabel.hide()
             self.mtimeDoubleSpinBox.hide()
         if actionType in [auto_action.IMAGE_MOUSE_CLICK, auto_action.IMAGE_WAIT, auto_action.IMAGE_SCREENSHOT,
-                          auto_action.IMAGE_WAIT_CLICK]:
+                          auto_action.IMAGE_MOVE]:
             self.pathBtn.show()
             self.pathLabel.show()
             self.pathLineEdit.show()
@@ -331,8 +332,6 @@ class ActionDialog(QtWidgets.QDialog):
         dx = int(match.group(3))
         dy = int(match.group(4))
         return x, y, dx, dy
-
-
 
     def getClickType(self) -> str:
         return self.clickTypeComboBox.currentData()
@@ -396,6 +395,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.authorWidget = AuthorWidget()
         self.authorWidget.hide()
 
+        self.addActionGroupAction = QtWidgets.QAction(self)
+        self.delActionGroupAction = QtWidgets.QAction(self)
+        self.copyActionGroupAction = QtWidgets.QAction(self)
+        self.importActionGroupAction = QtWidgets.QAction(self)
+
         # 数据变量
         if actionGroupDict is None:
             actionGroupDict = {}
@@ -444,6 +448,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.menubar.addAction(self.aboutAction)
         self.screenShotAction.setObjectName("screenShotAction")
         self.menubar.addAction(self.screenShotAction)
+        self.addActionGroupAction.setObjectName("addActionGroupAction")
+        self.delActionGroupAction.setObjectName("delActionGroupAction")
+        self.copyActionGroupAction.setObjectName("copyActionGroupAction")
+        self.importActionGroupAction.setObjectName("importActionGroupAction")
 
         self.retranslateUi()
         QtCore.QMetaObject.connectSlotsByName(self)
@@ -455,17 +463,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionListView.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.actionListView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 
-
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
         self.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.addActionBtn.setText(_translate("MainWindow", "插入动作"))
-        self.delActionBtn.setText(_translate("MainWindow", "移除动作"))
-        self.runActionBtn.setText(_translate("MainWindow", "运行动作组"))
+        self.addActionBtn.setText(_translate("MainWindow", "添加新动作"))
+        self.delActionBtn.setText(_translate("MainWindow", "移除选中动作"))
+        self.runActionBtn.setText(_translate("MainWindow", "运行选中动作组"))
         self.upActionBtn.setText(_translate("MainWindow", "上移"))
         self.downActionBtn.setText(_translate("MainWindow", "下移"))
         self.aboutAction.setText(_translate("MainWindow", "关于"))
         self.screenShotAction.setText(_translate("MainWindow", "截图"))
+        self.addActionGroupAction.setText(_translate("MainWindow", "添加新动作组"))
+        self.delActionGroupAction.setText(_translate("MainWindow", "删除选中动作组"))
+        self.copyActionGroupAction.setText(_translate("MainWindow", "复制到剪贴板"))
+        self.importActionGroupAction.setText(_translate("MainWindow", "从剪贴板导入"))
 
     @pyqtSlot()
     def on_aboutAction_triggered(self):
@@ -481,34 +492,60 @@ class MainWindow(QtWidgets.QMainWindow):
         截图
         :return:
         """
+        self.hide()
         utils.screenShotByKey()
-
+        self.show()
 
     @pyqtSlot(QPoint)
     def on_actionGroupListView_customContextMenuRequested(self, pos):
         """
         打开动作组窗口
-        :param pos:
+        :param pos: 鼠标当前位置
         :return:
         """
         menu = QtWidgets.QMenu()
-        addActionGroupAction = menu.addAction("添加新动作组")
-        delActionGroupAction = menu.addAction("删除选中动作组")
-        action = menu.exec_(self.actionGroupListView.mapToGlobal(pos))
-        if action == addActionGroupAction:
-            dialog = ActionGroupNameDialog()
-            self.hide()
-            dialog.show()
-            res = dialog.exec()
-            if res == QtWidgets.QDialog.Accepted:
-                name = dialog.getInput()
-                self.addNewActionGroup(name)
-            self.show()
-        elif action == delActionGroupAction:
-            name = self.getSelectedActionGroupName()
-            if name is None:
-                return
-            self.delActionGroup(name)
+        menu.addAction(self.addActionGroupAction)
+        menu.addAction(self.delActionGroupAction)
+        menu.addAction(self.copyActionGroupAction)
+        menu.addAction(self.importActionGroupAction)
+        menu.exec_(self.actionGroupListView.mapToGlobal(pos))
+
+    @pyqtSlot()
+    def on_addActionGroupAction_triggered(self):
+        dialog = ActionGroupNameDialog()
+        self.hide()
+        dialog.show()
+        res = dialog.exec()
+        if res == QtWidgets.QDialog.Accepted:
+            name = dialog.getInput()
+            self.addNewActionGroup(name=name)
+        self.show()
+
+    @pyqtSlot()
+    def on_delActionGroupAction_triggered(self):
+        name = self.getSelectedActionGroupName()
+        if name is None:
+            return
+        self.delActionGroup(name)
+
+    @pyqtSlot()
+    def on_copyActionGroupAction_triggered(self):
+        name = self.getSelectedActionGroupName()
+        if name is None:
+            return
+        pyperclip.copy(self.actionGroupDict[name].json())
+
+    @pyqtSlot()
+    def on_importActionGroupAction_triggered(self):
+        dialog = ActionGroupNameDialog()
+        self.hide()
+        dialog.show()
+        res = dialog.exec()
+        if res == QtWidgets.QDialog.Accepted:
+            name = dialog.getInput()
+            dataList = json.loads(pyperclip.paste())
+            self.addNewActionGroup(name, dataList)
+        self.show()
 
     @pyqtSlot(QModelIndex)
     def on_actionGroupListView_clicked(self):
@@ -574,7 +611,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.swapAction(row, row - 1)
             self.actionListView.setCurrentIndex(self.actionListModel.index(row - 1))
 
-
+    @pyqtSlot()
     def on_downActionBtn_clicked(self):
         """
         下移选中动作
@@ -621,37 +658,42 @@ class MainWindow(QtWidgets.QMainWindow):
             actionGroup = self.actionGroupDict[name]
             self.actionListModel.setStringList(actionGroup.explainList)
 
-    def addNewActionGroup(self, name: str):
+    def addNewActionGroup(self, name: str, dataList=None):
         """
         添加动作组
-        :param name 新动作组名字
+        :param name: 新动作组名字
+        :param dataList: 新动作组数据
         :return:
         """
+        if dataList is None:
+            dataList = []
         if name in self.actionGroupDict.keys():
             i = 0
             while name + f"({i})" in self.actionGroupDict.keys():
                 i += 1
             name = name + f"({i})"
         row = self.actionGroupListModel.rowCount()
+        try:
+            # 数据部分
+            actonGroup = auto_action.ActionGroup(name=name, dataList=dataList)
+            self.actionGroupDict[name] = actonGroup
+            self.actionGroupDict[name].save()
 
-        # 数据部分
-        actonGroup = auto_action.ActionGroup(name=name)
-        self.actionGroupDict[name] = actonGroup
-        self.actionGroupDict[name].save()
-
-        # ui 部分
-        self.actionGroupListModel.insertRow(row)
-        self.actionGroupListModel.setData(self.actionGroupListModel.index(row), name)
+            # ui 部分
+            self.actionGroupListModel.insertRow(row)
+            self.actionGroupListModel.setData(self.actionGroupListModel.index(row), name)
+        except KeyError:
+            return
 
     def delActionGroup(self, name: str | None):
         """
         删除名称为 name 的动作组
-
+        :param name 动作组名称
         :return:
         """
         if name is None:
             return
-
+        index = self.actionGroupListView.selectedIndexes()[0]
         # 数据部分
         self.actionGroupDict[name].deleteFile()
         self.actionGroupDict.pop(name)
@@ -660,7 +702,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionGroupListView.clearSelection()
         self.actionGroupListModel.removeRow(index.row())
         self.actionListModel.setStringList([])
-
 
     def addNewAction(self, data: dict):
         """
@@ -726,8 +767,8 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.actionGroupDict[name].run()
 
-
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         logger.debug(self.TAG + ": is closed.")
-        for name, actionGroup in self.actionGroupDict.items():
-            actionGroup.save()
+        # 关闭窗口后，自动保存（占用线程，暂时不用）
+        # for name, actionGroup in self.actionGroupDict.items():
+        #     actionGroup.save()

@@ -1,17 +1,12 @@
 import sys
 
-from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QApplication
 
-import auto_action
+from auto_action import readAllJsons
 from pyUI import MainWindow
 
-
-def test_main():
-    app = QtWidgets.QApplication(sys.argv)
-    win = MainWindow(actionGroupDict=auto_action.readAllJsons())
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    win = MainWindow(actionGroupDict=readAllJsons())
     win.show()
     sys.exit(app.exec())
-
-
-if __name__ == '__main__':
-    test_main()

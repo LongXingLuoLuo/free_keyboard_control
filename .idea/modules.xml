@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/鼠标宏.iml" filepath="$PROJECT_DIR$/.idea/鼠标宏.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../the_mouse_macro/.idea/the_mouse_macro.iml" filepath="$PROJECT_DIR$/../the_mouse_macro/.idea/the_mouse_macro.iml" />
     </modules>
   </component>
 </project>

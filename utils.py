@@ -1,5 +1,5 @@
 import datetime
-import os
+import os.path
 import re
 import time
 
@@ -84,7 +84,7 @@ def getAllFiles(rootPath: str, expression: str) -> list:
     for filename in os.listdir(rootPath):
         path = os.path.join(rootPath, filename)
         if os.path.isdir(path):
-            allFiles += getAllFiles(path)
+            allFiles += getAllFiles(path, expression)
         elif cp.search(path):
             allFiles.append(os.path.abspath(path))
     return allFiles
