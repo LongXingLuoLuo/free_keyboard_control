@@ -44,7 +44,11 @@ class AuthorWidget(QtWidgets.QWidget):
                                             "<h2 style=\" margin-top:16px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:x-large; font-weight:600;\">软件 github 仓库</span></h2>\n"
                                             "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><a href=\"https://github.com/LongXingLuoLuo/free_keyboard_control\"><span style=\" text-decoration: underline; color:#0000ff;\">https://github.com/LongXingLuoLuo/free_keyboard_control</span></a></p>\n"
                                             "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">（若该链接进不去，则说明作者本人未公开此仓库。）</p>\n"
-                                            "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"> </p></body></html>"))
+                                            "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:14pt; font-weight:600;\">截图功能使用 </span></p>\n"
+                                            "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">点击“截图”，然后在需要截图的区域的左上角和右下角分别按下 F8，即完成截图，截图保存在软件目录下 <span style=\" font-weight:600;\">images </span>文件夹下。</p>\n"
+                                            "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:14pt; font-weight:600;\">坐标和选区功能使用</span></p>\n"
+                                            "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">把鼠标移动到在想要选的坐标下，然后按下 F8，即可选择该坐标。</p>\n"
+                                            "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">在选择的区域的左上角和右下角分别按下 F8，即选择矩形区域。</p></body></html>"))
 
 
 class ActionGroupNameDialog(QtWidgets.QDialog):
@@ -544,6 +548,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if res == QtWidgets.QDialog.Accepted:
             name = dialog.getInput()
             dataList = json.loads(pyperclip.paste())
+            print(dataList)
             self.addNewActionGroup(name, dataList)
         self.show()
 
