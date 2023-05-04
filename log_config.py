@@ -1,5 +1,3 @@
-import logging
-import os.path
 import logging.config
 configPath = r'./log.conf'
 configFile = open(configPath, 'r', encoding='UTF-8')
