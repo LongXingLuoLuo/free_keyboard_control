@@ -7,6 +7,7 @@ import keyboard
 import pyautogui
 import pyperclip
 
+import utils
 from log_config import logger
 from utils import getAllFiles
 
@@ -198,23 +199,22 @@ def generateFuncAndExplain(data: dict):
 
         explain = f"运行 {inputStr}"
     elif actionType == IMAGE_MOUSE_CLICK:  # 检测到图片后点击
-        path = data['path']
+        imgStr = data['imgStr']
+        img = utils.strToImg(imgStr)
         clickType = data['clickType']
         region = data['region']
 
         def func():
             """检测到图片后点击"""
-            if not os.path.exists(path):
-                return False
-            boxes = pyautogui.locateAllOnScreen(path, region=region)
+            boxes = pyautogui.locateAllOnScreen(img, region=region)
             for box in boxes:
                 pyautogui.click(box.left + box.width / 2, box.top + box.height / 2, button=clickType)
-                print(box)
             return True
 
-        explain = f"检测{region}区域内点击({clickType}) {os.path.basename(path)}"
+        explain = f"在{region}区域内点击({clickType}) 指定图片"
     elif actionType == IMAGE_WAIT:  # 直到检测到图片后执行
-        path = data['path']
+        imgStr = data['imgStr']
+        img = utils.strToImg(imgStr)
         mtime = data.get('mtime', 1000)
 
         def func():
@@ -230,7 +230,7 @@ def generateFuncAndExplain(data: dict):
                     time.sleep(0.05)
             return True
 
-        explain = f"在 {mtime}s 内检测是否有 {os.path.basename(path)}"
+        explain = f"在 {mtime}s 内检测到指定图片后继续运行"
     elif actionType == IMAGE_SCREENSHOT:  # 截图
         path = data['path']
         region = data['region']
@@ -239,18 +239,19 @@ def generateFuncAndExplain(data: dict):
             pyautogui.screenshot(path, region=region)
             return True
 
-        explain = f"在{region}区域内截图，保存为 {os.path.basename(path)}"
+        explain = f"在{region}区域内截图，保存为 {path}"
     elif actionType == IMAGE_MOVE:  # 鼠标移动到指定图片位置
-        path = data['path']
+        imgStr = data['imgStr']
+        img = utils.strToImg(imgStr)
 
         def func():
-            box = pyautogui.locateOnScreen(path)
+            box = pyautogui.locateOnScreen(img)
             if box is None:
                 return False
             pyautogui.moveTo(box.left + box.width / 2, box.top + box.height / 2)
             return True
 
-        explain = f"鼠标移动到 {os.path.basename(path)}"
+        explain = f"鼠标移动到指定图片的位置"
     return func, explain
 
 

@@ -3,6 +3,7 @@ import json
 import os.path
 import re
 
+import PIL.Image
 import pyperclip
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import pyqtSlot, QPoint, QModelIndex
@@ -371,7 +372,7 @@ class ActionDialog(QtWidgets.QDialog):
         if not self.mtimeDoubleSpinBox.isHidden():
             data['mtime'] = self.getMtime()
         if not self.pathLineEdit.isHidden():
-            data['path'] = self.getPath()
+            data['imgStr'] = utils.imgToStr(PIL.Image.open(self.getPath()))
         return data
 
 
