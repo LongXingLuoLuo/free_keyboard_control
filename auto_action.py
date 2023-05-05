@@ -17,6 +17,7 @@ datasDir = './datas'
 pyautogui.PAUSE = 0.5
 # ! 动作执行间隔时间
 ACTION_PAUSE = 0.1
+CONFIDENCE = 0.8
 # ! 在长时间动作中，结束动作运行
 stopKey = '`'
 
@@ -198,20 +199,20 @@ def generateFuncAndExplain(data: dict):
             return True
 
         explain = f"运行 {inputStr}"
-    elif actionType == IMAGE_MOUSE_CLICK:  # 检测到图片后点击
+    elif actionType == IMAGE_MOUSE_CLICK:  # 点击所有指定图片
         imgStr = data['imgStr']
         img = utils.strToImg(imgStr)
         clickType = data['clickType']
         region = data['region']
 
         def func():
-            """检测到图片后点击"""
-            boxes = pyautogui.locateAllOnScreen(img, region=region)
+            """点击所有指定图片"""
+            boxes = pyautogui.locateAllOnScreen(img, region=region, confidence=CONFIDENCE)
             for box in boxes:
                 pyautogui.click(box.left + box.width / 2, box.top + box.height / 2, button=clickType)
             return True
 
-        explain = f"在{region}区域内点击({clickType}) 指定图片"
+        explain = f"在{region}区域内点击({clickType}) 所有指定图片"
     elif actionType == IMAGE_WAIT:  # 直到检测到图片后执行
         imgStr = data['imgStr']
         img = utils.strToImg(imgStr)
@@ -221,7 +222,7 @@ def generateFuncAndExplain(data: dict):
             t1 = time.time()
             if not os.path.exists(path):
                 return False
-            while pyautogui.locateOnScreen(path) is None:
+            while pyautogui.locateOnScreen(path, confidence=CONFIDENCE) is None:
                 if time.time() > t1 + mtime:
                     return False
                 elif keyboard.is_pressed(stopKey):
@@ -245,7 +246,7 @@ def generateFuncAndExplain(data: dict):
         img = utils.strToImg(imgStr)
 
         def func():
-            box = pyautogui.locateOnScreen(img)
+            box = pyautogui.locateOnScreen(img, confidence=CONFIDENCE)
             if box is None:
                 return False
             pyautogui.moveTo(box.left + box.width / 2, box.top + box.height / 2)
@@ -289,6 +290,8 @@ class ActionGroup(object):
                     return False
                 time.sleep(ACTION_PAUSE)
         except OSError:
+            logger.error(self.TAG + ": run error.")
+        except pyautogui.PyAutoGUIException:
             logger.error(self.TAG + ": run error.")
         logger.info(self.TAG + ": run end.")
         return True
