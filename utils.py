@@ -2,9 +2,12 @@ import datetime
 import os.path
 import re
 import time
+from base64 import b64decode, b64encode
+from io import BytesIO
 
 import pyautogui
 import pynput.keyboard
+from PIL import Image
 
 # 截图保存的文件夹
 imagesPath = r'./images'
@@ -88,3 +91,26 @@ def getAllFiles(rootPath: str, expression: str) -> list:
         elif cp.search(path):
             allFiles.append(os.path.abspath(path))
     return allFiles
+
+
+def imgToStr(img: Image.Image):
+    """
+    图片转为字符串
+    :param img: 原图片
+    :return: 图片转为的字符串
+    """
+    imgByte = BytesIO()
+    img.save(imgByte, format='PNG')
+    byteContent = imgByte.getvalue()
+    base64_bytes = b64encode(byteContent)
+    return base64_bytes.decode('utf-8')
+
+
+def strToImg(byteStr: str) -> Image.Image:
+    """
+    字符串转图片
+    :param byteStr: 字符串
+    :return: 字符串转为的图片
+    """
+    imgByte = b64decode(byteStr)
+    return Image.open(BytesIO(imgByte))
