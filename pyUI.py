@@ -270,8 +270,7 @@ class ActionDialog(QtWidgets.QDialog):
         else:
             self.inputStrLabel.hide()
             self.inputStrLineEdit.hide()
-        if actionType in [auto_action.TIME_DELAY, auto_action.ACTION_END, auto_action.IMAGE_WAIT,
-                          auto_action.IMAGE_SCREENSHOT]:
+        if actionType in [auto_action.TIME_DELAY, auto_action.ACTION_END, auto_action.IMAGE_WAIT]:
             self.mtimeLabel.show()
             self.mtimeDoubleSpinBox.show()
         else:
@@ -353,6 +352,10 @@ class ActionDialog(QtWidgets.QDialog):
     def getPath(self) -> str:
         return self.pathLineEdit.text().strip()
 
+
+    def getImgStr(self):
+        return utils.imgToStr(PIL.Image.open(self.getPath()))
+
     def getAction(self) -> dict:
         """
         获取输入数据
@@ -372,7 +375,10 @@ class ActionDialog(QtWidgets.QDialog):
         if not self.mtimeDoubleSpinBox.isHidden():
             data['mtime'] = self.getMtime()
         if not self.pathLineEdit.isHidden():
-            data['imgStr'] = utils.imgToStr(PIL.Image.open(self.getPath()))
+            if self.getActionType() == auto_action.IMAGE_SCREENSHOT:
+                data['path'] = self.getPath()
+            else:
+                data['imgStr'] = self.getImgStr()
         return data
 
 
