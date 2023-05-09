@@ -308,11 +308,10 @@ class ActionDialog(QtWidgets.QDialog):
         self.showMinimized()
         if not os.path.exists(utils.imagesPath):
             os.mkdir(utils.imagesPath)
-        path = QtWidgets.QFileDialog.getOpenFileName(self, directory=utils.imagesPath, filter='*.png', options=QtWidgets.QFileDialog.Options() | QtWidgets.QFileDialog.DontUseNativeDialog)
-        if path is None:
-            path = ''
-        elif len(path) == 0:
-            path = ''
+        if self.getActionType() == auto_action.IMAGE_SCREENSHOT:
+            path = QtWidgets.QFileDialog.getSaveFileName(self, directory=utils.imagesPath, filter='*.png')
+        else:
+            path = QtWidgets.QFileDialog.getOpenFileName(self, directory=utils.imagesPath, filter='*.png')
         self.pathLineEdit.setText(path[0])
         self.showNormal()
 
