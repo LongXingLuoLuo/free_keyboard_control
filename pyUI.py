@@ -309,9 +309,9 @@ class ActionDialog(QtWidgets.QDialog):
         if not os.path.exists(utils.imagesPath):
             os.mkdir(utils.imagesPath)
         if self.getActionType() == auto_action.IMAGE_SCREENSHOT:
-            path = QtWidgets.QFileDialog.getSaveFileName(self, directory=utils.imagesPath, filter='*.png')
+            path = QtWidgets.QFileDialog(self).getSaveFileName(self, "选择需要保存的图片路径", directory=utils.imagesPath, filter="PNG(*.png)")
         else:
-            path = QtWidgets.QFileDialog.getOpenFileName(self, directory=utils.imagesPath, filter='*.png')
+            path = QtWidgets.QFileDialog(self).getOpenFileName(self, "选择需要打开的图片", directory=utils.imagesPath, filter="PNG(*.png)")
         self.pathLineEdit.setText(path[0])
         self.showNormal()
 
@@ -431,6 +431,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def setupUi(self):
         self.setObjectName("MainWindow")
         self.resize(800, 600)
+        self.setWindowIcon(QtGui.QIcon("resources/logo.png"))
         self.centralWidget.setObjectName("centralWidget")
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.actionGroupListView.setObjectName("actionGroupListView")
@@ -484,7 +485,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
-        self.setWindowTitle(_translate("MainWindow", "主窗口"))
+        self.setWindowTitle(_translate("MainWindow", "自由键鼠"))
         self.addActionBtn.setText(_translate("MainWindow", "添加新动作"))
         self.delActionBtn.setText(_translate("MainWindow", "移除选中动作"))
         self.runActionBtn.setText(_translate("MainWindow", "运行选中动作组"))
@@ -531,7 +532,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_addActionGroupAction_triggered(self):
-        dialog = ActionGroupNameDialog()
+        dialog = ActionGroupNameDialog(self)
         self.hide()
         dialog.show()
         res = dialog.exec()
@@ -556,7 +557,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_importActionGroupAction_triggered(self):
-        dialog = ActionGroupNameDialog()
+        dialog = ActionGroupNameDialog(self)
         self.hide()
         dialog.show()
         res = dialog.exec()
@@ -583,7 +584,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         if self.getSelectedActionGroupName() is None:
             return
-        dialog = ActionDialog()
+        dialog = ActionDialog(self)
         self.hide()
         dialog.show()
         res = dialog.exec()
